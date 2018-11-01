@@ -1,27 +1,29 @@
 image: node:10.12.0
 
-# This folder is cached between builds
-# http://docs.gitlab.com/ce/ci/yaml/README.html#cache
 cache:
   paths:
   - node_modules/
 
 stages:
-  - setup
   - build
   - test
   - deploy
 
 setup:
-  stage: setup
+  stage: build
   script:
+    - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )'
     - npm install
-  cache:
-    paths:
-    - node_modules/
 
 eslint:
-  stage: build
+  stage: test
   script:
     - npm install -g eslint
     - npm run lint
+
+deploy:
+  only:
+    - master
+  stage: deploy
+  script:
+    - bash deploy/deploy.sh
