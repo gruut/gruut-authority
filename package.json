@@ -4,7 +4,10 @@
   "private": true,
   "scripts": {
     "start": "node ./bin/www",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test": "mocha test/**/*.js --exit",
+    "sequelize_test_setup": "sequelize db:create --env test",
+    "sequelize_test_migrate": "sequelize db:migrate --env test"
   },
   "dependencies": {
     "chai": "^4.2.0",

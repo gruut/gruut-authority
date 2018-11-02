@@ -10,8 +10,8 @@ module.exports = {
     operatorsAliases: false,
   },
   test: {
-    username: process.env.SEQUELIZE_USER,
-    password: process.env.SEQUELIZE_PASSWORD,
+    username: 'root',
+    password: 'mysql',
     database: 'gruut_authority_test',
     host: '127.0.0.1',
     dialect: 'mysql',
