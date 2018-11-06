@@ -10,6 +10,7 @@
     "sequelize_test_migrate": "sequelize db:migrate --env test"
   },
   "dependencies": {
+    "@fidm/x509": "^1.2.0",
     "body-parser": "^1.18.3",
     "chai": "^4.2.0",
     "chai-http": "^4.2.0",
@@ -22,6 +23,7 @@
     "mocha": "^5.2.0",
     "morgan": "~1.9.0",
     "mysql2": "^1.6.1",
+    "node-forge": "^0.7.6",
     "pug": "2.0.0-beta11",
     "sequelize": "^4.41.0"
   },

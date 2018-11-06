@@ -1,18 +1,16 @@
 module.exports = {
-  up: (queryInterface, Sequelize) => queryInterface.createTable('users', {
-    nid: {
+  up: (queryInterface, Sequelize) => queryInterface.createTable('keys', {
+    id: {
       allowNull: false,
       autoIncrement: true,
       primaryKey: true,
       type: Sequelize.INTEGER,
     },
-    phone: {
-      allowNull: false,
-      type: Sequelize.STRING,
+    privateKey: {
+      type: Sequelize.TEXT,
     },
-    role: {
-      allowNull: false,
-      type: Sequelize.INTEGER,
+    publicKey: {
+      type: Sequelize.TEXT,
     },
     createdAt: {
       allowNull: false,
@@ -23,5 +21,5 @@ module.exports = {
       type: Sequelize.DATE,
     },
   }),
-  down: queryInterface => queryInterface.dropTable('users'),
+  down: queryInterface => queryInterface.dropTable('keys'),
 };
