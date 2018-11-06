@@ -13,6 +13,13 @@ module.exports = (sequelize, DataTypes) => {
         notEmpty: true,
       },
     },
+    role: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      validate: {
+        notEmpty: true,
+      },
+    },
   },
   {
     timestamps: true,
