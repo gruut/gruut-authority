@@ -1,10 +1,42 @@
 const forge = require('node-forge');
+const { Key, sequelize: { Op } } = require('../models');
 
 module.exports = {
+  generateKeyPair: async () => {
+    try {
+      if (global.keyPairs) return global.keyPairs;
+
+      const { pki } = forge;
+
+      let keys = await Key.findOne({
+        where: {
+          id: { [Op.gt]: 0 },
+        },
+      });
+
+      if (keys === null) {
+        keys = pki.rsa.generateKeyPair(2048);
+
+        keys = await Key.create({
+          privateKey: JSON.stringify(keys.privateKey),
+          publicKey: JSON.stringify(keys.publicKey),
+        });
+      }
+
+      global.keyPairs = {
+        publicKey: JSON.parse(keys.publicKey), privateKey: JSON.parse(keys.privateKey),
+      };
+
+      return global.keyPairs;
+    } catch (err) {
+      throw err;
+    }
+  },
+
   getCert: () => {
     try {
       const { pki } = forge;
-      const keys = pki.rsa.generateKeyPair(2048);
+      const keys = this.generateKeyPair();
       const cert = pki.createCertificate();
 
       cert.publicKey = keys.publicKey;

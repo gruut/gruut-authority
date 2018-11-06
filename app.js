@@ -3,11 +3,14 @@ const express = require('express');
 const path = require('path');
 const cookieParser = require('cookie-parser');
 const logger = require('morgan');
-
+const cert = require('./utils/cert');
 const indexRouter = require('./routes/index');
 const v1 = require('./routes/v1');
 
 const app = express();
+
+// set global variable
+cert.generateKeyPair();
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
