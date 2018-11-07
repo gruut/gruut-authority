@@ -8,16 +8,18 @@ const userRole = require('../enums/user_role');
 
 router.post('/users', bodyParser.urlencoded({ extended: false }), async (req, res) => {
   try {
-    const phone = req.body;
+    const { phone } = req.body;
 
     let user = await User.findOne({
-      where: phone,
+      where: {
+        phone,
+      },
       attributes: ['nid'],
     });
 
     if (!user) {
-      user = await User.create({ phone, user_role: userRole.SIGNER });
-      const pem = cert.getCert(user.nid);
+      user = await User.create({ phone, role: userRole.SIGNER });
+      const pem = await cert.getCert(user.nid);
 
       return res.status(200).json({
         code: 200,
@@ -27,11 +29,12 @@ router.post('/users', bodyParser.urlencoded({ extended: false }), async (req, re
       });
     }
 
+    const pem = await cert.getCert(user.nid);
     return res.status(200).json({
       code: 200,
       message: '유저가 이미 존재합니다.',
       nid: user.nid,
-      pem: cert.getCert(user.nid),
+      pem,
     });
   } catch (err) {
     // TODO: logger로 대체해야 함

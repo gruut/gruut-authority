@@ -1,8 +1,8 @@
 const forge = require('node-forge');
 const { Key, sequelize: { Op } } = require('../models');
 
-module.exports = {
-  generateKeyPair: async () => {
+class Cert {
+  static async generateKeyPair() {
     try {
       if (global.keyPairs) return global.keyPairs;
 
@@ -14,29 +14,34 @@ module.exports = {
         },
       });
 
+      const generatedKeys = pki.rsa.generateKeyPair(2048);
       if (keys === null) {
-        keys = pki.rsa.generateKeyPair(2048);
-
         keys = await Key.create({
-          privateKey: JSON.stringify(keys.privateKey),
-          publicKey: JSON.stringify(keys.publicKey),
+          privateKey: JSON.stringify(generatedKeys.privateKey),
+          publicKey: JSON.stringify(generatedKeys.publicKey),
         });
       }
 
+      // eslint-disable-next-line guard-for-in,no-restricted-syntax
+      for (const i in keys) {
+        generatedKeys[i] = keys[i];
+      }
+
       global.keyPairs = {
-        publicKey: JSON.parse(keys.publicKey), privateKey: JSON.parse(keys.privateKey),
+        publicKey: generatedKeys.publicKey,
+        privateKey: generatedKeys.privateKey,
       };
 
       return global.keyPairs;
     } catch (err) {
       throw err;
     }
-  },
+  }
 
-  getCert: (nid) => {
+  static async getCert(nid) {
     try {
       const { pki } = forge;
-      const keys = this.generateKeyPair();
+      const keys = await this.generateKeyPair();
       const cert = pki.createCertificate();
 
       cert.publicKey = keys.publicKey;
@@ -70,5 +75,7 @@ module.exports = {
     } catch (err) {
       throw err;
     }
-  },
-};
+  }
+}
+
+module.exports = Cert;

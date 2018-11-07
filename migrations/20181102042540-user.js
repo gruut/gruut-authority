@@ -7,7 +7,6 @@ module.exports = {
       type: Sequelize.INTEGER,
     },
     phone: {
-      allowNull: false,
       type: Sequelize.STRING,
     },
     role: {

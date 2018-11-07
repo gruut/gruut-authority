@@ -1,3 +1,6 @@
+const Sequelize = require('sequelize');
+const userRole = require('../enums/user_role');
+
 module.exports = (sequelize, DataTypes) => {
   const User = sequelize.define('User', {
     nid: {
@@ -8,10 +11,6 @@ module.exports = (sequelize, DataTypes) => {
     },
     phone: {
       type: DataTypes.STRING,
-      allowNull: false,
-      validate: {
-        notEmpty: true,
-      },
     },
     role: {
       type: DataTypes.INTEGER,
@@ -23,6 +22,13 @@ module.exports = (sequelize, DataTypes) => {
   },
   {
     timestamps: true,
+  });
+
+
+  User.beforeCreate((user) => {
+    if (user.role === userRole.SIGNER) {
+      if (user.phone === '' || typeof user.phone === 'undefined') throw Sequelize.ValidationError;
+    }
   });
 
   return User;

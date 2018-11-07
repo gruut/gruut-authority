@@ -32,7 +32,7 @@ describe('User', () => {
         phone: '',
         role: userRole.SIGNER,
       }).catch((err) => {
-        expect(err.name).to.equal('SequelizeValidationError');
+        expect(err.name).to.equal('ValidationError');
         done();
       });
     });
