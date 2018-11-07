@@ -3,9 +3,12 @@ const express = require('express');
 const path = require('path');
 const cookieParser = require('cookie-parser');
 const logger = require('morgan');
+const bugsnag = require('bugsnag');
 const cert = require('./utils/cert');
 const indexRouter = require('./routes/index');
 const v1 = require('./routes/v1');
+
+bugsnag.register('135360f339967fe35d6fb8c9d47fa779');
 
 const app = express();
 
@@ -21,9 +24,13 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(bugsnag.requestHandler);
+app.use(bugsnag.errorHandler);
 
 app.use('/', indexRouter);
 app.use('/v1', v1);
+
+bugsnag.notify(new Error('Test error'));
 
 // catch 404 and forward to error handler
 app.use((req, res, next) => {

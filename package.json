@@ -12,6 +12,7 @@
   "dependencies": {
     "@fidm/x509": "^1.2.0",
     "body-parser": "^1.18.3",
+    "bugsnag": "^2.4.3",
     "chai": "^4.2.0",
     "chai-http": "^4.2.0",
     "cookie-parser": "~1.4.3",
