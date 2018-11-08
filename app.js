@@ -8,6 +8,7 @@ const rfs = require('rotating-file-stream');
 const winston = require('winston');
 const fs = require('fs');
 const cert = require('./utils/cert');
+const { sequelize } = require('./models');
 const indexRouter = require('./routes/index');
 const v1 = require('./routes/v1');
 
