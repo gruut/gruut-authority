@@ -12,6 +12,7 @@ const indexRouter = require('./routes/index');
 const v1 = require('./routes/v1');
 
 const app = express();
+app.set('port', process.env.PORT || 48080);
 
 // eslint-disable-next-line new-cap
 const transport = new (winston.transports.DailyRotateFile)({
@@ -38,7 +39,7 @@ app.set('view engine', 'pug');
 
 if (process.env.NODE_ENV === 'production') {
   const accessLogStream = rfs('access.log', {
-    interval: '1w',
+    interval: '14d',
     path: path.join('/tmp/log', 'access'),
   });
 
@@ -82,5 +83,13 @@ app.use((err, req, res) => {
   res.status(err.status || 500);
   res.render('error');
 });
+
+app.listen(app.get('port'), () => {
+  errorLogger.log({
+    level: 'info',
+    message: `PORT: ${app.get('port')}`,
+  });
+});
+
 
 module.exports = app;
