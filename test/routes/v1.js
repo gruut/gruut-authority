@@ -17,6 +17,13 @@ chai.use(chaiHttp);
 
 describe('POST users', function () {
   this.timeout(5000);
+  const publicKey = '-----BEGIN PUBLIC KEY-----\n'
+    + '\n'
+    + ' MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCqGKukO1De7zhZj6+H0qtjTkVxwTCpvKe4eCZ0\n'
+    + ' FPqri0cb2JZfXJ/DgYSF6vUpwmJG8wVQZKjeGcjDOL5UlsuusFncCzWBQ7RKNUSesmQRMSGkVb1/\n'
+    + ' 3j+skZ6UtW+5u09lHNsj6tQ51s1SPrCBkedbNf0Tp0GbMJDyR4e9T04ZZwIDAQAB\n'
+    + '\n'
+    + '-----END PUBLIC KEY-----';
 
   before((done) => {
     // drops table and re-creates it
@@ -33,6 +40,7 @@ describe('POST users', function () {
       .send({
         phone: '010-8770-6498',
         role: userRole.SIGNER,
+        publicKey,
       })
       .end((err, res) => {
         res.should.have.status(200);
@@ -46,6 +54,7 @@ describe('POST users', function () {
       .send({
         phone: '010-8770-6498',
         role: userRole.SIGNER,
+        publicKey,
       })
       .end((err, res) => {
         res.should.have.status(200);
@@ -61,6 +70,7 @@ describe('POST users', function () {
       .send({
         phone: '010-8770-6498',
         role: userRole.SIGNER,
+        publicKey,
       })
       .end((err, res) => {
         res.should.have.status(200);
@@ -71,12 +81,26 @@ describe('POST users', function () {
       });
   });
 
-  it('expect to have valid certificate data', (done) => {
+  it('expect to make error if pem format is invalid', (done) => {
     chai.request(server)
       .post('/v1/users')
       .send({
         phone: '010-8770-6498',
         role: userRole.SIGNER,
+        publicKey: '000',
+      })
+      .end((err, res) => {
+        res.should.have.status(404);
+        done();
+      });
+  });
+
+  it('expect to have valid certificate data', (done) => {
+    chai.request(server)
+      .post('/v1/users')
+      .send({
+        phone: '010-8770-6498',
+        publicKey,
       })
       .end((err, res) => {
         res.should.have.status(200);

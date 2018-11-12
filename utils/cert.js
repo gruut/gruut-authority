@@ -38,9 +38,21 @@ class Cert {
     }
   }
 
-  static async getCert(nid) {
+  static getPublicKeyInfo(publicKey) {
     try {
       const { pki } = forge;
+      const result = pki.publicKeyFromPem(publicKey);
+
+      return pki.publicKeyToAsn1(result);
+    } catch (e) {
+      throw (new Error('invalid public key format'));
+    }
+  }
+
+  static async getCert(userInfo) {
+    try {
+      const { pki } = forge;
+      const { nid, publicKey } = userInfo;
       const keys = await this.generateKeyPair();
       const cert = pki.createCertificate();
 
@@ -49,9 +61,10 @@ class Cert {
       cert.validity.notBefore = new Date();
       cert.validity.notAfter = new Date();
       cert.validity.notAfter.setFullYear(cert.validity.notBefore.getFullYear() + 1);
-      const attrs = [{
+
+      const issuerAttrs = [{
         name: 'commonName',
-        value: '',
+        value: 'theVaulters',
       }, {
         name: 'countryName',
         value: 'KR',
@@ -68,7 +81,12 @@ class Cert {
         shortName: 'OU',
         value: '',
       }];
-      cert.setSubject(attrs);
+
+      this.getPublicKeyInfo(publicKey);
+      // cert.setSubject(subjectPublicKeyInfo);
+      cert.setIssuer(issuerAttrs);
+
+
       cert.sign(keys.privateKey, forge.md.sha256.create());
 
       return pki.certificateToPem(cert);

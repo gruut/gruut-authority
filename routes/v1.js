@@ -8,18 +8,19 @@ const userRole = require('../enums/user_role');
 
 router.post('/users', bodyParser.urlencoded({ extended: false }), async (req, res) => {
   try {
-    const { phone } = req.body;
+    const { phone, publicKey } = req.body;
 
     let user = await User.findOne({
       where: {
         phone,
+        publicKey,
       },
       attributes: ['nid'],
     });
 
     if (!user) {
-      user = await User.create({ phone, role: userRole.SIGNER });
-      const pem = await cert.getCert(user.nid);
+      user = await User.create({ phone, publicKey, role: userRole.SIGNER });
+      const pem = await cert.getCert({ nid: user.nid, publicKey });
 
       return res.status(200).json({
         code: 200,
@@ -29,7 +30,7 @@ router.post('/users', bodyParser.urlencoded({ extended: false }), async (req, re
       });
     }
 
-    const pem = await cert.getCert(user.nid);
+    const pem = await cert.getCert({ nid: user.nid, publicKey });
     return res.status(200).json({
       code: 200,
       message: '유저가 이미 존재합니다.',
@@ -39,6 +40,13 @@ router.post('/users', bodyParser.urlencoded({ extended: false }), async (req, re
   } catch (err) {
     // TODO: logger로 대체해야 함
     console.error(err);
+
+    if (err.message === 'invalid public key format') {
+      return res.status(404).json({
+        code: 404,
+        message: '잘못된 public key 형식',
+      });
+    }
 
     return res.status(500).json({
       code: 500,
