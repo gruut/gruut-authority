@@ -38,25 +38,14 @@ class Cert {
     }
   }
 
-  static getPublicKeyInfo(publicKey) {
-    try {
-      const { pki } = forge;
-      const result = pki.publicKeyFromPem(publicKey);
-
-      return pki.publicKeyToAsn1(result);
-    } catch (e) {
-      throw (new Error('invalid public key format'));
-    }
-  }
-
   static async getCert(userInfo) {
     try {
       const { pki } = forge;
-      const { nid, publicKey } = userInfo;
+      const { nid, csr } = userInfo;
       const keys = await this.generateKeyPair();
       const cert = pki.createCertificate();
 
-      cert.publicKey = keys.publicKey;
+      cert.publicKey = csr.publicKey;
       cert.serialNumber = `${nid}`;
       cert.validity.notBefore = new Date();
       cert.validity.notAfter = new Date();
@@ -82,10 +71,8 @@ class Cert {
         value: '',
       }];
 
-      this.getPublicKeyInfo(publicKey);
-      // cert.setSubject(subjectPublicKeyInfo);
       cert.setIssuer(issuerAttrs);
-
+      cert.setSubject(csr.subject.attributes);
 
       cert.sign(keys.privateKey, forge.md.sha256.create());
 

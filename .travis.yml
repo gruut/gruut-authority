@@ -1,0 +1,13 @@
+notifications:
+  slack:
+    secure: JK36/ekCeSFhBWynVFio7/CSJct2ccd+RNiCt6rc33EuYp2hYd7854LfSsqzFFU/E3ES+9rXVoOGeZ62YnEKeYF3CjatHVQ6NXXW5IPFshxLsOuJQvQ/DdERTf/mxvlbyNyErlS+dwhHZjU/sXTnj4P11xcZztMkV/ZIs3mceQnp6pdAhub/6aq3kxwvRsLE05Phvf5ar4mZyhlSUXIxHimlToOwvMDJ5x5zR8r9w0JDUkOU3qgfOQe3G+T8cXn3U1N84riRkCh8HCsaROaL0TGy8plHZ2OqFU8HbXvHFmVy7E94plhRDI/iNtWr7+VTE06qpjTO2CdjPNqt12Zc5vdBjXE743scKKsRfak/kamjQY2QIdhec4ng9h2DAiPFSHA5f44uoSaPVcUr8ThNSKUtOoT9EHCJCKSXCF2QlEgt/ULO+gHveJsyncjlLxQ7FqTzh9p2WVFVVZcghhYhVi85agAbpNtRZWeAEwq2Yz9Jdc3NMwUGS9tb1ZG9goVFU5nRFIixNxn4wGEan66LIgfaOlvZ6fAC895IrT6CuwPmt2Yqh/vsIgdKE0TfD8RtQ6RxzPV9GWioOefuRIUkeHYYyxwEyMcoBzYCJHBwUglSluhZx6uSHW4urUoCU7rDNLhiG4KsHzoVENsmypXplcP5mxVbs/szubEAdhzKdQQ=
+  email: false
+language: node_js
+node_js:
+  - "lts/*"
+
+before_install:
+  - npm install
+script:
+  - npm install -g eslint
+  - npm run lint

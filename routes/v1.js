@@ -1,5 +1,6 @@
 const express = require('express');
 const bodyParser = require('body-parser');
+const forge = require('node-forge');
 
 const router = express.Router();
 const { User } = require('../models');
@@ -8,19 +9,24 @@ const userRole = require('../enums/user_role');
 
 router.post('/users', bodyParser.urlencoded({ extended: false }), async (req, res) => {
   try {
-    const { phone, publicKey } = req.body;
+    const { phone, csr } = req.body;
+
+    const subjectCsr = forge.pki.certificationRequestFromPem(csr);
+    const pemPublicKey = forge.pki.publicKeyToPem(subjectCsr.publicKey);
 
     let user = await User.findOne({
       where: {
         phone,
-        publicKey,
+        publicKey: pemPublicKey,
       },
       attributes: ['nid'],
     });
 
     if (!user) {
-      user = await User.create({ phone, publicKey, role: userRole.SIGNER });
-      const pem = await cert.getCert({ nid: user.nid, publicKey });
+      user = await User.build({ phone, publicKey: pemPublicKey, role: userRole.SIGNER });
+      const pem = await cert.getCert({ nid: user.nid, csr: subjectCsr });
+      user.cert = pem;
+      await user.save();
 
       return res.status(200).json({
         code: 200,
@@ -30,12 +36,10 @@ router.post('/users', bodyParser.urlencoded({ extended: false }), async (req, re
       });
     }
 
-    const pem = await cert.getCert({ nid: user.nid, publicKey });
     return res.status(200).json({
       code: 200,
       message: '유저가 이미 존재합니다.',
       nid: user.nid,
-      pem,
     });
   } catch (err) {
     // TODO: logger로 대체해야 함
@@ -45,6 +49,13 @@ router.post('/users', bodyParser.urlencoded({ extended: false }), async (req, re
       return res.status(404).json({
         code: 404,
         message: '잘못된 public key 형식',
+      });
+    }
+
+    if (err.message === 'Invalid PEM formatted message.') {
+      return res.status(404).json({
+        code: 404,
+        message: '잘못된 PEM 형식',
       });
     }
 

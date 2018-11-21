@@ -14,6 +14,27 @@ describe('User', () => {
     + '\n'
     + '-----END PUBLIC KEY-----';
 
+  const cert = '-----BEGIN CERTIFICATE-----\n'
+    + 'MIIDUTCCAjmgAwIBAgIBBDANBgkqhkiG9w0BAQsFADBhMRQwEgYDVQQDEwt0aGVW\n'
+    + 'YXVsdGVyczELMAkGA1UEBhMCS1IxCTAHBgNVBAgTADEQMA4GA1UEBxMHSW5jaGVv\n'
+    + 'bjEUMBIGA1UEChMLdGhlVmF1bHRlcnMxCTAHBgNVBAsTADAeFw0xODExMjEwNzMw\n'
+    + 'MjdaFw0xOTExMjEwNzMwMjdaMHcxCzAJBgNVBAYTAlVTMQ0wCwYDVQQIDARVdGFo\n'
+    + 'MQ8wDQYDVQQHDAZMaW5kb24xFjAUBgNVBAoMDURpZ2lDZXJ0IEluYy4xETAPBgNV\n'
+    + 'BAsMCERpZ2lDZXJ0MR0wGwYDVQQDDBRleGFtcGxlLmRpZ2ljZXJ0LmNvbTCCASIw\n'
+    + 'DQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAPPk6O3ftpD1ngb/6K1Ny1WycA60\n'
+    + 'kG3impgpqMKeW6g8SMFdtM6kW+wD1DimKFRBRThELOk+oCJpyKJYW4h+puM4Gfwj\n'
+    + '71gTpGXPnNT6NhJrwc/gA+bAXU+ZMxkAOjW1smRpXcUbYTSzrNXnzoXZ1hboSNet\n'
+    + 'qpnH5YKYiFg7sKuAvX/mJHiYTZ/XRefqMJvHDkJg61fDTXYk6op/Kt6mABxyUVtv\n'
+    + 'IJSVAmZE2cCGkkenKwUPE22DRNHXPgmmtwziJM9RDrB1s08fp9Myn6nG4F4uAycf\n'
+    + 'gtW46bWD0QT2S/AwHlrgPHm7nVU+OMhKfNhvevxoHH+xd98TMXtMnPl2uqMCAwEA\n'
+    + 'ATANBgkqhkiG9w0BAQsFAAOCAQEAbw/Cq5pd4AO1jXhAnI/OWSavu9dHXxKkgjfk\n'
+    + 'UMPQ2Rzakr5xvm/Qsv2u0clqq8Cv7/NPERaD9cr1OzGGxZkKGcFyct8z6AKS8n9b\n'
+    + 'z0YdDiwXws5Y4P3rWbWPywO4iTcKieS6YgSImsqu5fxfVu0ytnEMJAg7AZRKADNC\n'
+    + 'TEXhb736/Ep8fqfuS3M+7OHx7FEnq+phbhWtFABlf9owm0ld/jaDblnALs8t62CP\n'
+    + 'YYDDM5W7nTd26hKrPdjt9BTTrDKOL2UIatCzLvNKgUI8c5cpFDq3+PCWTBmFghkY\n'
+    + 'pMKUtM2HOFKS/8uOCJwrS5qFrhNWvT0VwvYbK932otqkK8edcA==\n'
+    + '-----END CERTIFICATE-----\n';
+
   before((done) => {
     User.sync({ force: true }) // drops table and re-creates it
       .then(() => {
@@ -30,6 +51,7 @@ describe('User', () => {
         phone: '010-1234-5678',
         role: userRole.SIGNER,
         publicKey,
+        cert,
       }).then((user) => {
         expect(user.phone).to.equal('010-1234-5678');
         done();
@@ -41,6 +63,7 @@ describe('User', () => {
         phone: '',
         role: userRole.SIGNER,
         publicKey,
+        cert,
       }).catch((err) => {
         expect(err.name).to.equal('ValidationError');
         done();
@@ -52,6 +75,18 @@ describe('User', () => {
         phone: '010-8770-6498',
         role: userRole.SIGNER,
         publicKey: '',
+      }).catch((err) => {
+        expect(err.name).to.equal('ValidationError');
+        done();
+      });
+    });
+
+    it('should not create user if cert is empty', (done) => {
+      User.create({
+        phone: '010-8770-6498',
+        role: userRole.SIGNER,
+        publicKey,
+        cert: '',
       }).catch((err) => {
         expect(err.name).to.equal('ValidationError');
         done();

@@ -22,6 +22,9 @@ module.exports = (sequelize, DataTypes) => {
     publicKey: {
       type: DataTypes.TEXT,
     },
+    cert: {
+      type: DataTypes.TEXT,
+    },
   },
   {
     timestamps: true,
@@ -31,6 +34,7 @@ module.exports = (sequelize, DataTypes) => {
     if (user.role === userRole.SIGNER) {
       if (user.phone === '' || typeof user.phone === 'undefined') throw Sequelize.ValidationError;
       if (user.publicKey === '' || typeof user.publicKey === 'undefined') throw Sequelize.ValidationError;
+      if (user.cert === '' || typeof user.cert === 'undefined') throw Sequelize.ValidationError;
     }
   });
 
