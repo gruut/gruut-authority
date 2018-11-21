@@ -17,13 +17,23 @@ chai.use(chaiHttp);
 
 describe('POST users', function () {
   this.timeout(5000);
-  const publicKey = '-----BEGIN PUBLIC KEY-----\n'
-    + '\n'
-    + ' MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCqGKukO1De7zhZj6+H0qtjTkVxwTCpvKe4eCZ0\n'
-    + ' FPqri0cb2JZfXJ/DgYSF6vUpwmJG8wVQZKjeGcjDOL5UlsuusFncCzWBQ7RKNUSesmQRMSGkVb1/\n'
-    + ' 3j+skZ6UtW+5u09lHNsj6tQ51s1SPrCBkedbNf0Tp0GbMJDyR4e9T04ZZwIDAQAB\n'
-    + '\n'
-    + '-----END PUBLIC KEY-----';
+  const csr = '-----BEGIN CERTIFICATE REQUEST-----\n'
+    + 'MIICvDCCAaQCAQAwdzELMAkGA1UEBhMCVVMxDTALBgNVBAgMBFV0YWgxDzANBgNV\n'
+    + 'BAcMBkxpbmRvbjEWMBQGA1UECgwNRGlnaUNlcnQgSW5jLjERMA8GA1UECwwIRGln\n'
+    + 'aUNlcnQxHTAbBgNVBAMMFGV4YW1wbGUuZGlnaWNlcnQuY29tMIIBIjANBgkqhkiG\n'
+    + '9w0BAQEFAAOCAQ8AMIIBCgKCAQEA8+To7d+2kPWeBv/orU3LVbJwDrSQbeKamCmo\n'
+    + 'wp5bqDxIwV20zqRb7APUOKYoVEFFOEQs6T6gImnIolhbiH6m4zgZ/CPvWBOkZc+c\n'
+    + '1Po2EmvBz+AD5sBdT5kzGQA6NbWyZGldxRthNLOs1efOhdnWFuhI162qmcflgpiI\n'
+    + 'WDuwq4C9f+YkeJhNn9dF5+owm8cOQmDrV8NNdiTqin8q3qYAHHJRW28glJUCZkTZ\n'
+    + 'wIaSR6crBQ8TbYNE0dc+Caa3DOIkz1EOsHWzTx+n0zKfqcbgXi4DJx+C1bjptYPR\n'
+    + 'BPZL8DAeWuA8ebudVT44yEp82G96/Ggcf7F33xMxe0yc+Xa6owIDAQABoAAwDQYJ\n'
+    + 'KoZIhvcNAQEFBQADggEBAB0kcrFccSmFDmxox0Ne01UIqSsDqHgL+XmHTXJwre6D\n'
+    + 'hJSZwbvEtOK0G3+dr4Fs11WuUNt5qcLsx5a8uk4G6AKHMzuhLsJ7XZjgmQXGECpY\n'
+    + 'Q4mC3yT3ZoCGpIXbw+iP3lmEEXgaQL0Tx5LFl/okKbKYwIqNiyKWOMj7ZR/wxWg/\n'
+    + 'ZDGRs55xuoeLDJ/ZRFf9bI+IaCUd1YrfYcHIl3G87Av+r49YVwqRDT0VDV7uLgqn\n'
+    + '29XI1PpVUNCPQGn9p/eX6Qo7vpDaPybRtA2R7XLKjQaF9oXWeCUqy1hvJac9QFO2\n'
+    + '97Ob1alpHPoZ7mWiEuJwjBPii6a9M9G30nUo39lBi1w=\n'
+    + '-----END CERTIFICATE REQUEST-----';
 
   before((done) => {
     // drops table and re-creates it
@@ -40,7 +50,7 @@ describe('POST users', function () {
       .send({
         phone: '010-8770-6498',
         role: userRole.SIGNER,
-        publicKey,
+        csr,
       })
       .end((err, res) => {
         res.should.have.status(200);
@@ -54,7 +64,7 @@ describe('POST users', function () {
       .send({
         phone: '010-8770-6498',
         role: userRole.SIGNER,
-        publicKey,
+        csr,
       })
       .end((err, res) => {
         res.should.have.status(200);
@@ -70,11 +80,11 @@ describe('POST users', function () {
       .send({
         phone: '010-8770-6498',
         role: userRole.SIGNER,
-        publicKey,
+        csr,
       })
       .end((err, res) => {
         res.should.have.status(200);
-        const str = res.body.pem;
+        const str = res.body.nid;
 
         expect(str).to.exist;
         done();
@@ -99,8 +109,8 @@ describe('POST users', function () {
     chai.request(server)
       .post('/v1/users')
       .send({
-        phone: '010-8770-6498',
-        publicKey,
+        phone: '010-1234-5678',
+        csr,
       })
       .end((err, res) => {
         res.should.have.status(200);
