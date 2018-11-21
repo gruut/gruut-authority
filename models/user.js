@@ -22,6 +22,9 @@ module.exports = (sequelize, DataTypes) => {
     publicKey: {
       type: DataTypes.TEXT,
     },
+    cert: {
+      type: DataTypes.TEXT,
+    },
   },
   {
     timestamps: true,

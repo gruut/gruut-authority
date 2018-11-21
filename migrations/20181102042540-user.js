@@ -16,6 +16,9 @@ module.exports = {
     publicKey: {
       type: Sequelize.TEXT,
     },
+    cert: {
+      type: Sequelize.TEXT,
+    },
     createdAt: {
       allowNull: false,
       type: Sequelize.DATE,
