@@ -39,14 +39,18 @@ class Cert {
     }
   }
 
-  static async getCert(userInfo) {
+  static async getCert(userInfo, selfSigned = false) {
     try {
       const { pki } = forge;
       const { nid, csr } = userInfo;
-      const keys = await this.generateKeyPair();
       const cert = pki.createCertificate();
 
-      cert.publicKey = csr.publicKey;
+      if (selfSigned) {
+        cert.publicKey = global.keyPairs.publicKey;
+      } else {
+        cert.publicKey = csr.publicKey;
+      }
+
       cert.serialNumber = `${nid}`;
       cert.validity.notBefore = new Date();
       cert.validity.notAfter = new Date();
@@ -75,7 +79,7 @@ class Cert {
       cert.setIssuer(issuerAttrs);
       cert.setSubject(csr.subject.attributes);
 
-      cert.sign(keys.privateKey, forge.md.sha256.create());
+      cert.sign(global.keyPairs.privateKey, forge.md.sha256.create());
 
       return pki.certificateToPem(cert);
     } catch (err) {
