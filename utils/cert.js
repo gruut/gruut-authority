@@ -25,18 +25,18 @@ class Cert {
 
       const users = await User.findAll({
         where: {
-          role: 100,
+          role: {
+            [Op.eq]: 100,
+          },
         },
       });
 
-      // eslint-disable-next-line no-restricted-syntax,guard-for-in
-      for (const user in users) {
+      users.forEach((user) => {
         user.publicKey = forge.pki.publicKeyToPem(global.keyPair.publicKey);
         user.cert = this.getCert({ nid: user.nid }, true);
 
-        // eslint-disable-next-line no-await-in-loop
         await user.save();
-      }
+      });
 
       // eslint-disable-next-line guard-for-in,no-restricted-syntax
       for (const i in keys) {
