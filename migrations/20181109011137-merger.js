@@ -1,14 +1,8 @@
-const forge = require('node-forge');
-const cert = require('../utils/cert');
-
-cert.generateKeyPair();
 module.exports = {
   up: queryInterface => queryInterface.bulkInsert('Users', [{
     nid: 1,
     phone: '',
     role: 100,
-    publicKey: forge.pki.publicKeyToPem(global.keyPair.publicKey),
-    cert: cert.getCert({ nid: 1 }, true),
     createdAt: new Date(),
     updatedAt: new Date(),
   },
@@ -16,8 +10,6 @@ module.exports = {
     nid: 2,
     phone: '',
     role: 100,
-    publicKey: forge.pki.publicKeyToPem(global.keyPair.publicKey),
-    cert: cert.getCert({ nid: 2 }, true),
     createdAt: new Date(),
     updatedAt: new Date(),
   },
@@ -25,8 +17,6 @@ module.exports = {
     nid: 3,
     phone: '',
     role: 100,
-    publicKey: forge.pki.publicKeyToPem(global.keyPair.publicKey),
-    cert: cert.getCert({ nid: 3 }, true),
     createdAt: new Date(),
     updatedAt: new Date(),
   }], {}),
