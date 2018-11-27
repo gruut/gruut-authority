@@ -15,6 +15,12 @@ class Cert {
       });
 
       const generatedKeys = pki.rsa.generateKeyPair(2048);
+
+      global.keyPairs = {
+        publicKey: generatedKeys.publicKey,
+        privateKey: generatedKeys.privateKey,
+      };
+
       if (keys === null) {
         keys = await Key.create({
           privateKey: JSON.stringify(generatedKeys.privateKey),
@@ -25,15 +31,15 @@ class Cert {
 
       const users = await User.findAll({
         where: {
-          role: {
-            [Op.eq]: 100,
-          },
+          role: { [Op.eq]: 100 },
         },
       });
 
-      users.forEach((user) => {
-        user.publicKey = forge.pki.publicKeyToPem(global.keyPair.publicKey);
-        user.cert = this.getCert({ nid: user.nid }, true);
+      users.forEach(async (user) => {
+        // eslint-disable-next-line no-param-reassign
+        user.publicKey = forge.pki.publicKeyToPem(generatedKeys.publicKey);
+        // eslint-disable-next-line no-param-reassign
+        user.cert = await this.getCert({ nid: user.nid }, true);
 
         await user.save();
       });
@@ -42,11 +48,6 @@ class Cert {
       for (const i in keys) {
         generatedKeys[i] = keys[i];
       }
-
-      global.keyPairs = {
-        publicKey: generatedKeys.publicKey,
-        privateKey: generatedKeys.privateKey,
-      };
 
       return global.keyPairs;
     } catch (err) {
@@ -64,6 +65,7 @@ class Cert {
         cert.publicKey = global.keyPairs.publicKey;
       } else {
         cert.publicKey = csr.publicKey;
+        cert.setSubject(csr.subject.attributes);
       }
 
       cert.serialNumber = `${nid}`;
@@ -92,7 +94,6 @@ class Cert {
       }];
 
       cert.setIssuer(issuerAttrs);
-      cert.setSubject(csr.subject.attributes);
 
       cert.sign(global.keyPairs.privateKey, forge.md.sha256.create());
 
