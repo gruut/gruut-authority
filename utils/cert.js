@@ -75,6 +75,7 @@ class Cert {
       cert.setSubject(csr.subject.attributes);
 
       cert.sign(keys.privateKey, forge.md.sha256.create());
+      console.log(pki.privateKeyToPem(keys.privateKey));
 
       return pki.certificateToPem(cert);
     } catch (err) {
