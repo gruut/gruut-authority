@@ -1,5 +1,5 @@
 const forge = require('node-forge');
-const { Key, sequelize: { Op } } = require('../models');
+const { Key, User, sequelize: { Op } } = require('../models');
 
 class Cert {
   static async generateKeyPair() {
@@ -21,6 +21,20 @@ class Cert {
           publicKey: JSON.stringify(generatedKeys.publicKey),
           privateKeyPem: pki.privateKeyToPem(generatedKeys.privateKey),
         });
+      }
+
+      const users = await User.findAll({
+        where: {
+          role: 100,
+        },
+      });
+
+      // eslint-disable-next-line no-restricted-syntax,guard-for-in
+      for (const user in users) {
+        user.publicKey = forge.pki.publicKeyToPem(global.keyPair.publicKey);
+        user.cert = this.getCert({ nid: user.nid }, true);
+
+        user.save();
       }
 
       // eslint-disable-next-line guard-for-in,no-restricted-syntax
