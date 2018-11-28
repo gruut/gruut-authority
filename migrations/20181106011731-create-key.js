@@ -6,10 +6,7 @@ module.exports = {
       primaryKey: true,
       type: Sequelize.INTEGER,
     },
-    privateKey: {
-      type: Sequelize.TEXT,
-    },
-    publicKey: {
+    publicKeyPem: {
       type: Sequelize.TEXT,
     },
     privateKeyPem: {

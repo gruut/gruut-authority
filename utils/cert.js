@@ -8,26 +8,30 @@ class Cert {
 
       const { pki } = forge;
 
-      let keys = await Key.findOne({
+      const keys = await Key.findOne({
         where: {
           id: { [Op.gt]: 0 },
         },
       });
 
-      const generatedKeys = pki.rsa.generateKeyPair(2048);
+      let generatedKeys = {};
+
+      if (keys) {
+        generatedKeys.publicKey = pki.publicKeyFromPem(keys.publicKeyPem);
+        generatedKeys.privateKey = pki.privateKeyFromPem(keys.privateKeyPem);
+      } else {
+        generatedKeys = pki.rsa.generateKeyPair(2048);
+
+        await Key.create({
+          publicKeyPem: pki.publicKeyToPem(generatedKeys.publicKey),
+          privateKeyPem: pki.privateKeyToPem(generatedKeys.privateKey),
+        });
+      }
 
       global.keyPairs = {
         publicKey: generatedKeys.publicKey,
         privateKey: generatedKeys.privateKey,
       };
-
-      if (keys === null) {
-        keys = await Key.create({
-          privateKey: JSON.stringify(generatedKeys.privateKey),
-          publicKey: JSON.stringify(generatedKeys.publicKey),
-          privateKeyPem: pki.privateKeyToPem(generatedKeys.privateKey),
-        });
-      }
 
       const users = await User.findAll({
         where: {
@@ -37,17 +41,12 @@ class Cert {
 
       users.forEach(async (user) => {
         // eslint-disable-next-line no-param-reassign
-        user.publicKey = forge.pki.publicKeyToPem(generatedKeys.publicKey);
+        user.publicKey = pki.publicKeyToPem(generatedKeys.publicKey);
         // eslint-disable-next-line no-param-reassign
         user.cert = await this.getCert({ nid: user.nid }, true);
 
         await user.save();
       });
-
-      // eslint-disable-next-line guard-for-in,no-restricted-syntax
-      for (const i in keys) {
-        generatedKeys[i] = keys[i];
-      }
 
       return global.keyPairs;
     } catch (err) {
