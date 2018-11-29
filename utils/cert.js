@@ -15,16 +15,20 @@ class Cert {
       });
 
       let generatedKeys = {};
-
       if (keys) {
         generatedKeys.publicKey = pki.publicKeyFromPem(keys.publicKeyPem);
         generatedKeys.privateKey = pki.privateKeyFromPem(keys.privateKeyPem);
       } else {
         generatedKeys = pki.rsa.generateKeyPair(2048);
 
+        // Generate PKCS#8 Private Key
+        const rsaPrivateKey = pki.privateKeyToAsn1(generatedKeys.privateKey);
+        const privateKeyInfo = pki.wrapRsaPrivateKey(rsaPrivateKey);
+        const privateKeyPem = pki.privateKeyInfoToPem(privateKeyInfo);
+
         await Key.create({
           publicKeyPem: pki.publicKeyToPem(generatedKeys.publicKey),
-          privateKeyPem: pki.privateKeyToPem(generatedKeys.privateKey),
+          privateKeyPem,
         });
       }
 
