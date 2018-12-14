@@ -12,6 +12,7 @@ const should = chai.should();
 const { expect } = chai;
 const server = require('../../app.js');
 const { User, Key } = require('../../models');
+const Cert = require('../../utils/cert');
 
 chai.use(chaiHttp);
 
@@ -106,6 +107,8 @@ describe('POST users', function () {
   });
 
   it('expect to have valid certificate data', (done) => {
+    Cert.generateKeyPair();
+
     chai.request(server)
       .post('/v1/users')
       .send({
