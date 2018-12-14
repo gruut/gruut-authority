@@ -5,6 +5,7 @@ const forge = require('node-forge');
 const router = express.Router();
 const { User } = require('../models');
 const cert = require('../utils/cert');
+const converter = require('../utils/type_converter');
 const userRole = require('../enums/user_role');
 
 router.post('/users', bodyParser.urlencoded({ extended: false }), async (req, res) => {
@@ -23,7 +24,7 @@ router.post('/users', bodyParser.urlencoded({ extended: false }), async (req, re
     });
 
     if (!user) {
-      user = await User.build({ phone, publicKey: pemPublicKey, role: userRole.SIGNER });
+      user = await User.create({ phone, publicKey: pemPublicKey, role: userRole.SIGNER });
       const pem = await cert.getCert({ nid: user.nid, csr: subjectCsr });
       user.cert = pem;
       await user.save();
@@ -31,7 +32,7 @@ router.post('/users', bodyParser.urlencoded({ extended: false }), async (req, re
       return res.status(200).json({
         code: 200,
         message: '유저가 등록되었습니다.',
-        nid: user.nid,
+        nid: converter.nIdToBase64Str(user.nid),
         pem,
       });
     }
@@ -39,7 +40,7 @@ router.post('/users', bodyParser.urlencoded({ extended: false }), async (req, re
     return res.status(200).json({
       code: 200,
       message: '유저가 이미 존재합니다.',
-      nid: user.nid,
+      nid: converter.nIdToBase64Str(user.nid),
     });
   } catch (err) {
     // TODO: logger로 대체해야 함

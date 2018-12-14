@@ -1,5 +1,7 @@
 const forge = require('node-forge');
+const Random = require('crypto-random');
 const { Key, User, sequelize: { Op } } = require('../models');
+const converter = require('./type_converter');
 
 class Cert {
   static async generateKeyPair() {
@@ -44,9 +46,7 @@ class Cert {
       });
 
       users.forEach(async (user) => {
-        // eslint-disable-next-line no-param-reassign
         user.publicKey = pki.publicKeyToPem(generatedKeys.publicKey);
-        // eslint-disable-next-line no-param-reassign
         user.cert = await this.getCert({ nid: user.nid }, true);
 
         await user.save();
@@ -68,10 +68,23 @@ class Cert {
         cert.publicKey = global.keyPairs.publicKey;
       } else {
         cert.publicKey = csr.publicKey;
+
+        const commonName = {
+          name: 'commonName',
+          value: `${converter.nIdToBase64Str(nid)}`,
+        };
+        const commonNameIndex = csr.subject.attributes.findIndex(attr => attr.name === 'commonName');
+        if (commonNameIndex === -1) {
+          csr.subject.attributes.push(commonName);
+        } else {
+          csr.subject.attributes[commonNameIndex] = commonName;
+        }
+
         cert.setSubject(csr.subject.attributes);
       }
 
-      cert.serialNumber = `${nid}`;
+      const serialNumber = Random.range(0, Number.MAX_SAFE_INTEGER);
+      cert.serialNumber = `${serialNumber}`;
       cert.validity.notBefore = new Date();
       cert.validity.notAfter = new Date();
       cert.validity.notAfter.setFullYear(cert.validity.notBefore.getFullYear() + 1);

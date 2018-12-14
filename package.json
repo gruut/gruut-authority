@@ -17,6 +17,7 @@
     "chai-http": "^4.2.0",
     "cookie-parser": "~1.4.3",
     "cross-env": "^5.2.0",
+    "crypto-random": "^1.0.3",
     "debug": "~2.6.9",
     "dotenv": "^6.1.0",
     "eslint-config-airbnb": "^17.1.0",

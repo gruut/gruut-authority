@@ -3,9 +3,12 @@ process.env.NODE_ENV = 'test';
 const { expect } = require('chai');
 const { User } = require('../../models');
 const userRole = require('../../enums/user_role');
+const Cert = require('../../utils/cert');
 
 /* eslint-disable no-undef */
 describe('User', () => {
+  Cert.generateKeyPair();
+
   const publicKey = '-----BEGIN PUBLIC KEY-----\n'
     + '\n'
     + ' MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCqGKukO1De7zhZj6+H0qtjTkVxwTCpvKe4eCZ0\n'
@@ -55,6 +58,8 @@ describe('User', () => {
       }).then((user) => {
         expect(user.phone).to.equal('010-1234-5678');
         done();
+      }).catch((err) => {
+        done(err);
       });
     });
 
@@ -75,18 +80,6 @@ describe('User', () => {
         phone: '010-8770-6498',
         role: userRole.SIGNER,
         publicKey: '',
-      }).catch((err) => {
-        expect(err.name).to.equal('ValidationError');
-        done();
-      });
-    });
-
-    it('should not create user if cert is empty', (done) => {
-      User.create({
-        phone: '010-8770-6498',
-        role: userRole.SIGNER,
-        publicKey,
-        cert: '',
       }).catch((err) => {
         expect(err.name).to.equal('ValidationError');
         done();
