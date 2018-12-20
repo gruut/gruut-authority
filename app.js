@@ -12,7 +12,7 @@ const indexRouter = require('./routes/index');
 const v1 = require('./routes/v1');
 
 const app = express();
-app.set('port', process.env.PORT || 48080);
+app.set('port', process.env.GA_PORT || 48080);
 
 // eslint-disable-next-line new-cap
 const transport = new (winston.transports.DailyRotateFile)({
