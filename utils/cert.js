@@ -90,9 +90,8 @@ class Cert {
 
       const issuerAttrStr = `/CN=${converter.nIdToBase64Str(nid)}/C=KR/L=Incheon`;
       tbsCert.setIssuerByParam({ str: issuerAttrStr });
-
-      tbsCert.setNotBeforeByParam({ str: `${new Date().getTime()}` });
-      tbsCert.setNotAfterByParam({ str: `${expiredTime}` });
+      tbsCert.setNotBeforeByParam({ str: `${new Date().getTime()}Z` });
+      tbsCert.setNotAfterByParam({ str: `${expiredTime}Z` });
       tbsCert.setSubjectByParam({ str: csr.subject.name });
       tbsCert.setSubjectPublicKeyByGetKey(csr.pubkey.obj);
 
