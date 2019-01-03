@@ -31,7 +31,17 @@ const errorLogger = winston.createLogger({
 });
 
 // set global variable
-cert.generateKeyPair();
+try {
+  cert.generateKeyPair();
+} catch (e) {
+  errorLogger.log({
+    level: 'error',
+    message: e,
+  });
+
+  process.exit(1);
+}
+
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));

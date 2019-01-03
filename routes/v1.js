@@ -24,7 +24,7 @@ router.post('/users', bodyParser.urlencoded({ extended: false }), async (req, re
 
     if (!user) {
       user = await User.create({ phone, publicKey: pemPublicKey, role: userRole.SIGNER });
-      const pem = await cert.getCert({ nid: user.nid, csr: subjectCsr });
+      const pem = cert.createCert({ nid: user.nid, csr: subjectCsr });
       user.cert = pem;
       await user.save();
 
