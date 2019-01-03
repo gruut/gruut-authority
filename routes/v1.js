@@ -1,6 +1,6 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-const forge = require('node-forge');
+const cryptoUtils = require('jsrsasign');
 
 const router = express.Router();
 const { User } = require('../models');
@@ -12,9 +12,8 @@ router.post('/users', bodyParser.urlencoded({ extended: false }), async (req, re
   try {
     const { phone, csr } = req.body;
 
-    const subjectCsr = forge.pki.certificationRequestFromPem(csr);
-    const pemPublicKey = forge.pki.publicKeyToPem(subjectCsr.publicKey);
-
+    const subjectCsr = cryptoUtils.asn1.csr.CSRUtil.getInfo(csr);
+    const pemPublicKey = cryptoUtils.asn1.ASN1Util.getPEMStringFromHex(subjectCsr.pubkey.hex, 'PUBLIC KEY');
     let user = await User.findOne({
       where: {
         phone,
@@ -46,10 +45,10 @@ router.post('/users', bodyParser.urlencoded({ extended: false }), async (req, re
     // TODO: logger로 대체해야 함
     console.error(err);
 
-    if (err.message === 'invalid public key format') {
+    if (err === 'argument is not PEM file') {
       return res.status(404).json({
         code: 404,
-        message: '잘못된 public key 형식',
+        message: '잘못된 PEM 형식',
       });
     }
 
