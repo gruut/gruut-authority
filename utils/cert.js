@@ -1,10 +1,14 @@
 const forge = require('node-forge');
+const path = require('path');
+const fs = require('fs');
 
 const { pki } = forge;
 const cryptoUtils = require('jsrsasign');
+const shell = require('shelljs');
 const moment = require('moment');
 const Random = require('crypto-random');
 const { Key, User, sequelize: { Op } } = require('../models');
+const Role = require('../enums/user_role');
 const converter = require('./type_converter');
 
 class Cert {
@@ -18,21 +22,34 @@ class Cert {
         },
       });
 
-      let generatedKeys = {};
+      const generatedKeys = {};
       if (keys) {
         generatedKeys.publicKey = pki.publicKeyFromPem(keys.publicKeyPem);
         generatedKeys.privateKey = pki.privateKeyFromPem(keys.privateKeyPem);
       } else {
-        generatedKeys = pki.rsa.generateKeyPair(3072);
+        if (!shell.which('botan')) {
+          shell.echo('Sorry, this script requires botan');
+          throw new Error('can not find botan cli');
+        }
 
-        const rsaPrivateKey = pki.privateKeyToAsn1(generatedKeys.privateKey);
-        const privateKeyInfo = pki.wrapRsaPrivateKey(rsaPrivateKey);
-        const privateKeyPem = pki.privateKeyInfoToPem(privateKeyInfo);
+        if (shell.exec(`${path.resolve('.')}/scripts/generate_keys.sh`).code !== 0) {
+          throw new Error('can not execute the script');
+        }
+
+        const certPem = fs.readFileSync('../GA_certificate.pem');
+        const cert = pki.certificateFromPem(certPem);
+        const publicKeyPem = pki.publicKeyToPem(cert.publicKey);
+
+        const privateKeyPem = fs.readFileSync('../GA_sk.pem');
+        generatedKeys.publicKey = cert.publicKey;
+        generatedKeys.privateKey = pki.privateKeyFromPem(privateKeyPem);
 
         await Key.create({
-          publicKeyPem: pki.publicKeyToPem(generatedKeys.publicKey),
+          publicKeyPem,
           privateKeyPem,
         });
+
+        this.updateMergersKeyInfo(publicKeyPem, certPem);
       }
 
       global.keyPairs = {
@@ -40,67 +57,25 @@ class Cert {
         privateKey: generatedKeys.privateKey,
       };
 
-      this.updateMergerInfo(generatedKeys);
-
       return global.keyPairs;
     } catch (err) {
       throw err;
     }
   }
 
-  static async updateMergerInfo(generatedKeys) {
+  static async updateMergersKeyInfo(publicKeyPem, certPem) {
     const users = await User.findAll({
       where: {
-        role: { [Op.eq]: 100 },
+        role: { [Op.eq]: Role.MERGER },
       },
     });
 
     users.forEach(async (user) => {
-      user.publicKey = pki.publicKeyToPem(generatedKeys.publicKey);
-      user.cert = this.getCert({ nid: user.nid }, true);
+      user.publicKey = publicKeyPem;
+      user.cert = certPem;
 
       await user.save();
     });
-  }
-
-  static getCert(userInfo, selfSigned = false) {
-    try {
-      if (selfSigned) {
-        return this.createSelfSignedCert();
-      }
-
-      return this.createCert(userInfo);
-    } catch (err) {
-      throw err;
-    }
-  }
-
-  static createSelfSignedCert() {
-    const cert = pki.createCertificate();
-
-    const serialNumber = this.getSerialNum();
-    cert.serialNumber = `${serialNumber}`;
-    cert.validity.notBefore = new Date();
-    cert.validity.notAfter = new Date();
-    cert.validity.notAfter.setFullYear(cert.validity.notBefore.getFullYear() + 1);
-
-    const issuerAttrs = [{
-      name: 'commonName',
-      value: 'theVaulters',
-    }, {
-      name: 'countryName',
-      value: 'KR',
-    }, {
-      name: 'localityName',
-      value: 'Incheon',
-    }];
-    cert.setIssuer(issuerAttrs);
-
-    cert.publicKey = global.keyPairs.publicKey;
-
-    cert.sign(global.keyPairs.privateKey, forge.md.sha256.create());
-
-    return pki.certificateToPem(cert);
   }
 
   static createCert(userInfo) {
@@ -132,8 +107,6 @@ class Cert {
 
       return cert.getPEMString();
     } catch (e) {
-      // TODO: logger
-      console.log(e);
       throw e;
     }
   }
