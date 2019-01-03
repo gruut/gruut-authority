@@ -6,7 +6,8 @@ const userRole = require('../../enums/user_role');
 const Cert = require('../../utils/cert');
 
 /* eslint-disable no-undef */
-describe('User', () => {
+describe('User', function () {
+  this.timeout(50000);
   Cert.generateKeyPair();
 
   const publicKey = '-----BEGIN PUBLIC KEY-----\n'
