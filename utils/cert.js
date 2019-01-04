@@ -83,15 +83,17 @@ class Cert {
       const { nid, csr } = userInfo;
       const tbsCert = new cryptoUtils.asn1.x509.TBSCertificate();
 
-      const expiredTime = moment().add(1, 'years').valueOf();
 
       tbsCert.setSerialNumberByParam({ int: this.getSerialNum() });
       tbsCert.setSignatureAlgByParam({ name: 'SHA256withRSA' });
 
       const issuerAttrStr = `/CN=${converter.nIdToBase64Str(nid)}/C=KR/L=Incheon`;
       tbsCert.setIssuerByParam({ str: issuerAttrStr });
-      tbsCert.setNotBeforeByParam({ str: `${new Date().getTime()}Z` });
-      tbsCert.setNotAfterByParam({ str: `${expiredTime}Z` });
+
+      tbsCert.setNotBeforeByParam({ date: new Date(moment().utc().format()) });
+
+      const expiredTime = moment().add(10, 'years');
+      tbsCert.setNotAfterByParam({ date: new Date(expiredTime.utc().format()) });
       tbsCert.setSubjectByParam({ str: csr.subject.name });
       tbsCert.setSubjectPublicKeyByGetKey(csr.pubkey.obj);
 
