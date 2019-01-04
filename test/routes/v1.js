@@ -11,7 +11,7 @@ const userRole = require('../../enums/user_role');
 const should = chai.should();
 const { expect } = chai;
 const server = require('../../app.js');
-const { User, Key } = require('../../models');
+const { User, Key, sequelize: { Op } } = require('../../models');
 const Cert = require('../../utils/cert');
 
 chai.use(chaiHttp);
@@ -41,7 +41,6 @@ describe('POST users', function () {
       .post('/v1/users')
       .send({
         phone: '010-8770-6498',
-        role: userRole.SIGNER,
         csr,
       })
       .end((err, res) => {
@@ -50,12 +49,11 @@ describe('POST users', function () {
       });
   });
 
-  it('expect to have nid', (done) => {
+  it('expects to have nid', (done) => {
     chai.request(server)
       .post('/v1/users')
       .send({
         phone: '010-8770-6498',
-        role: userRole.SIGNER,
         csr,
       })
       .end((err, res) => {
@@ -66,12 +64,11 @@ describe('POST users', function () {
       });
   });
 
-  it('expect to have pem', (done) => {
+  it('expects to have pem', (done) => {
     chai.request(server)
       .post('/v1/users')
       .send({
         phone: '010-8770-6498',
-        role: userRole.SIGNER,
         csr,
       })
       .end((err, res) => {
@@ -83,7 +80,31 @@ describe('POST users', function () {
       });
   });
 
-  it('expect to make a error if pem format is invalid', (done) => {
+  it('expects to accept a role parameter', (done) => {
+    Cert.generateKeyPair();
+
+    chai.request(server)
+      .post('/v1/users')
+      .send({
+        phone: '010-8770-1111',
+        csr,
+        role: userRole.ENDPOINT,
+      })
+      .end(async (err, res) => {
+        res.should.have.status(200);
+
+        const user = await User.findOne({
+          where: {
+            role: { [Op.eq]: userRole.ENDPOINT },
+          },
+        });
+
+        expect(user.nid).to.exist;
+        done();
+      });
+  });
+
+  it('expects to make a error if pem format is invalid', (done) => {
     chai.request(server)
       .post('/v1/users')
       .send({
@@ -97,7 +118,7 @@ describe('POST users', function () {
       });
   });
 
-  it('expect to have valid certificate data', (done) => {
+  it('expects to have valid certificate data', (done) => {
     Cert.generateKeyPair();
 
     chai.request(server)
