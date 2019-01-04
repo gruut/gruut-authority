@@ -36,11 +36,11 @@ class Cert {
           throw new Error('can not execute the script');
         }
 
-        const certPem = fs.readFileSync('../GA_certificate.pem');
+        const certPem = fs.readFileSync(path.resolve(__dirname, '../GA_certificate.pem'));
         const cert = pki.certificateFromPem(certPem);
         const publicKeyPem = pki.publicKeyToPem(cert.publicKey);
 
-        const privateKeyPem = fs.readFileSync('../GA_sk.pem');
+        const privateKeyPem = fs.readFileSync(path.resolve(__dirname, '../GA_sk.pem'));
         generatedKeys.publicKey = cert.publicKey;
         generatedKeys.privateKey = pki.privateKeyFromPem(privateKeyPem);
 
@@ -116,7 +116,7 @@ class Cert {
   }
 
   static getIssuerAttr() {
-    const issuerCertPem = fs.readFileSync('../GA_certificate.pem');
+    const issuerCertPem = fs.readFileSync(path.resolve(__dirname, '../GA_certificate.pem'));
     const issuerCert = pki.certificateFromPem(issuerCertPem);
 
     return _.sum(issuerCert.issuer.attributes, attr => `/${attr.shortName}=${attr.value}`);
