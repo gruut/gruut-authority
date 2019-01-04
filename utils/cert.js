@@ -88,7 +88,6 @@ class Cert {
       tbsCert.setSignatureAlgByParam({ name: 'SHA256withRSA' });
 
       tbsCert.setIssuerByParam({ str: this.getIssuerAttr() });
-
       tbsCert.setNotBeforeByParam({ date: new Date(moment().utc().format()) });
 
       const expiredTime = moment().add(10, 'years');
