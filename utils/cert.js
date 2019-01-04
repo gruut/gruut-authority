@@ -7,9 +7,9 @@ const cryptoUtils = require('jsrsasign');
 const shell = require('shelljs');
 const moment = require('moment');
 const Random = require('crypto-random');
+const _ = require('partial-js');
 const { Key, User, sequelize: { Op } } = require('../models');
 const Role = require('../enums/user_role');
-const converter = require('./type_converter');
 
 class Cert {
   static async generateKeyPair() {
@@ -80,18 +80,20 @@ class Cert {
 
   static createCert(userInfo) {
     try {
-      const { nid, csr } = userInfo;
-      const tbsCert = new cryptoUtils.asn1.x509.TBSCertificate();
+      const { csr } = userInfo;
 
-      const expiredTime = moment().add(1, 'years').valueOf();
+      const tbsCert = new cryptoUtils.asn1.x509.TBSCertificate();
 
       tbsCert.setSerialNumberByParam({ int: this.getSerialNum() });
       tbsCert.setSignatureAlgByParam({ name: 'SHA256withRSA' });
 
-      const issuerAttrStr = `/CN=${converter.nIdToBase64Str(nid)}/C=KR/L=Incheon`;
-      tbsCert.setIssuerByParam({ str: issuerAttrStr });
-      tbsCert.setNotBeforeByParam({ str: `${new Date().getTime()}Z` });
-      tbsCert.setNotAfterByParam({ str: `${expiredTime}Z` });
+      tbsCert.setIssuerByParam({ str: this.getIssuerAttr() });
+
+      tbsCert.setNotBeforeByParam({ date: new Date(moment().utc().format()) });
+
+      const expiredTime = moment().add(10, 'years');
+      tbsCert.setNotAfterByParam({ date: new Date(expiredTime.utc().format()) });
+
       tbsCert.setSubjectByParam({ str: csr.subject.name });
       tbsCert.setSubjectPublicKeyByGetKey(csr.pubkey.obj);
 
@@ -112,6 +114,13 @@ class Cert {
 
   static getSerialNum() {
     return Random.range(0, Number.MAX_SAFE_INTEGER);
+  }
+
+  static getIssuerAttr() {
+    const issuerCertPem = fs.readFileSync('../GA_certificate.pem');
+    const issuerCert = pki.certificateFromPem(issuerCertPem);
+
+    return _.sum(issuerCert.issuer.attributes, attr => `/${attr.shortName}=${attr.value}`);
   }
 }
 

@@ -10,7 +10,7 @@ const userRole = require('../enums/user_role');
 
 router.post('/users', bodyParser.urlencoded({ extended: false }), async (req, res) => {
   try {
-    const { phone, csr } = req.body;
+    const { phone, csr, role } = req.body;
 
     const subjectCsr = cryptoUtils.asn1.csr.CSRUtil.getInfo(csr);
     const pemPublicKey = cryptoUtils.asn1.ASN1Util.getPEMStringFromHex(subjectCsr.pubkey.hex, 'PUBLIC KEY');
@@ -23,8 +23,15 @@ router.post('/users', bodyParser.urlencoded({ extended: false }), async (req, re
     });
 
     if (!user) {
-      user = await User.create({ phone, publicKey: pemPublicKey, role: userRole.SIGNER });
-      const pem = cert.createCert({ nid: user.nid, csr: subjectCsr });
+      let r;
+      if (Object.values(userRole).includes(parseInt(role, 10))) {
+        r = parseInt(role, 10);
+      } else {
+        r = userRole.SIGNER;
+      }
+      user = await User.create({ phone, publicKey: pemPublicKey, role: r });
+
+      const pem = cert.createCert({ nid: user.nid, csr: subjectCsr, role: r });
       user.cert = pem;
       await user.save();
 
