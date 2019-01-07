@@ -1,6 +1,6 @@
 module.exports = (sequelize, DataTypes) => {
   const Key = sequelize.define('Key', {
-    publicKeyPem: DataTypes.TEXT,
+    certificatePem: DataTypes.TEXT,
     privateKeyPem: DataTypes.TEXT,
   }, {});
   Key.associate = function () {

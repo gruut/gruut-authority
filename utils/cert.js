@@ -16,16 +16,18 @@ class Cert {
     try {
       if (global.keyPairs) return global.keyPairs;
 
-      const keys = await Key.findOne({
+      const key = await Key.findOne({
         where: {
           id: { [Op.gt]: 0 },
         },
       });
 
       const generatedKeys = {};
-      if (keys) {
-        generatedKeys.publicKey = pki.publicKeyFromPem(keys.publicKeyPem);
-        generatedKeys.privateKey = pki.privateKeyFromPem(keys.privateKeyPem);
+      if (key) {
+        const cert = pki.certificateFromPem(key.certificatePem);
+
+        generatedKeys.publicKey = cert.publicKey;
+        generatedKeys.privateKey = pki.privateKeyFromPem(key.privateKeyPem);
       } else {
         if (!shell.which('botan')) {
           shell.echo('Sorry, this script requires botan');
@@ -36,16 +38,19 @@ class Cert {
           throw new Error('can not execute the script');
         }
 
-        const certPem = fs.readFileSync(path.resolve(__dirname, '../GA_certificate.pem'));
+        const certPem = fs.readFileSync(path.resolve(__dirname, '../GA_certificate.pem')).toString();
         const cert = pki.certificateFromPem(certPem);
         const publicKeyPem = pki.publicKeyToPem(cert.publicKey);
 
-        const privateKeyPem = fs.readFileSync(path.resolve(__dirname, '../GA_sk.pem'));
+        const privateKeyPem = fs.readFileSync(path.resolve(__dirname, '../GA_sk.pem')).toString();
         generatedKeys.publicKey = cert.publicKey;
         generatedKeys.privateKey = pki.privateKeyFromPem(privateKeyPem);
 
+        fs.unlinkSync(path.resolve(__dirname, '../GA_certificate.pem'));
+        fs.unlinkSync(path.resolve(__dirname, '../GA_sk.pem'));
+
         await Key.create({
-          publicKeyPem,
+          certificatePem: certPem,
           privateKeyPem,
         });
 
@@ -78,7 +83,7 @@ class Cert {
     });
   }
 
-  static createCert(userInfo) {
+  static async createCert(userInfo) {
     try {
       const { csr } = userInfo;
 
@@ -87,7 +92,8 @@ class Cert {
       tbsCert.setSerialNumberByParam({ int: this.getSerialNum() });
       tbsCert.setSignatureAlgByParam({ name: 'SHA256withRSA' });
 
-      tbsCert.setIssuerByParam({ str: this.getIssuerAttr() });
+      const attrs = await this.getIssuerAttr();
+      tbsCert.setIssuerByParam({ str: attrs });
       tbsCert.setNotBeforeByParam({ date: new Date(moment().utc().format()) });
 
       const expiredTime = moment().add(10, 'years');
@@ -115,8 +121,11 @@ class Cert {
     return Random.range(0, Number.MAX_SAFE_INTEGER);
   }
 
-  static getIssuerAttr() {
-    const issuerCertPem = fs.readFileSync(path.resolve(__dirname, '../GA_certificate.pem'));
+  static async getIssuerAttr() {
+    const key = await Key.findOne({
+      attributes: ['certificatePem'],
+    });
+    const issuerCertPem = key.certificatePem;
     const issuerCert = pki.certificateFromPem(issuerCertPem);
 
     return _.sum(issuerCert.issuer.attributes, attr => `/${attr.shortName}=${attr.value}`);

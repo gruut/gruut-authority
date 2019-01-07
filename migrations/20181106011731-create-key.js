@@ -6,7 +6,7 @@ module.exports = {
       primaryKey: true,
       type: Sequelize.INTEGER,
     },
-    publicKeyPem: {
+    certificatePem: {
       type: Sequelize.TEXT,
     },
     privateKeyPem: {
