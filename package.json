@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start": "pm2 start app.js",
+    "start": "pm2 start app.js --name 'gruut-authority'",
     "dev": "node app.js",
     "lint": "eslint .",
     "test": "mocha test/**/*.js --exit",
