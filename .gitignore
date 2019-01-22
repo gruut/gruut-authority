@@ -4,3 +4,5 @@ node_modules
 access.log
 /GA_sk.pem
 /GA_certificate.pem
+.vscode
+.history

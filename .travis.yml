@@ -1,13 +1,25 @@
+services:
+  - docker
 notifications:
-  slack:
-    secure: JK36/ekCeSFhBWynVFio7/CSJct2ccd+RNiCt6rc33EuYp2hYd7854LfSsqzFFU/E3ES+9rXVoOGeZ62YnEKeYF3CjatHVQ6NXXW5IPFshxLsOuJQvQ/DdERTf/mxvlbyNyErlS+dwhHZjU/sXTnj4P11xcZztMkV/ZIs3mceQnp6pdAhub/6aq3kxwvRsLE05Phvf5ar4mZyhlSUXIxHimlToOwvMDJ5x5zR8r9w0JDUkOU3qgfOQe3G+T8cXn3U1N84riRkCh8HCsaROaL0TGy8plHZ2OqFU8HbXvHFmVy7E94plhRDI/iNtWr7+VTE06qpjTO2CdjPNqt12Zc5vdBjXE743scKKsRfak/kamjQY2QIdhec4ng9h2DAiPFSHA5f44uoSaPVcUr8ThNSKUtOoT9EHCJCKSXCF2QlEgt/ULO+gHveJsyncjlLxQ7FqTzh9p2WVFVVZcghhYhVi85agAbpNtRZWeAEwq2Yz9Jdc3NMwUGS9tb1ZG9goVFU5nRFIixNxn4wGEan66LIgfaOlvZ6fAC895IrT6CuwPmt2Yqh/vsIgdKE0TfD8RtQ6RxzPV9GWioOefuRIUkeHYYyxwEyMcoBzYCJHBwUglSluhZx6uSHW4urUoCU7rDNLhiG4KsHzoVENsmypXplcP5mxVbs/szubEAdhzKdQQ=
   email: false
 language: node_js
-node_js:
-  - "lts/*"
-
+node_js: '10'
+cache: npm
+os: linux
 before_install:
-  - npm install
+  - docker pull doscode/gruut-nodejs:latest
+  - docker run --name gruut-authority -e MYSQL_ROOT_PASSWORD=$MYSQL_PASSWORD -d doscode/gruut-nodejs:latest
 script:
-  - npm install -g eslint
-  - npm run lint
+  - docker exec gruut-authority sh -c "
+    mkdir -p workspace && cd workspace;
+    pwd;
+    git clone --branch=master https://github.com/gruut/gruut-authority.git;
+    cd gruut-authority;
+    rm -f package-lock.json;
+    npm install;
+    cp /etc/.ga.env .env;
+    sequelize db:create --env test;
+    sequelize db:migrate --env test;
+    npm run lint;
+    npm run test;
+    "
