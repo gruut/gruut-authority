@@ -8,16 +8,15 @@ cache: npm
 os: linux
 before_install:
   - docker pull doscode/gruut-nodejs:latest
+before_script:
   - docker run --name gruut-authority -e MYSQL_ROOT_PASSWORD=$MYSQL_PASSWORD -d doscode/gruut-nodejs:latest
 script:
   - docker exec gruut-authority sh -c "
     mkdir -p workspace && cd workspace;
-    pwd;
-    git clone --branch=master https://github.com/gruut/gruut-authority.git;
-    cd gruut-authority;
+    git clone --branch=master https://github.com/gruut/gruut-authority.git && cd gruut-authority;
     rm -f package-lock.json;
-    npm install;
     cp /etc/.ga.env .env;
+    npm install;
     sequelize db:create --env test;
     sequelize db:migrate --env test;
     npm run lint;

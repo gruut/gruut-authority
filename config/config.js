@@ -16,6 +16,7 @@ module.exports = {
     host: '127.0.0.1',
     dialect: 'mysql',
     operatorsAliases: false,
+    _socket: '/var/run/mysqld/mysqld.sock',
   },
   production: {
     username: process.env.SEQUELIZE_USER,

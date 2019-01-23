@@ -122,13 +122,17 @@ class Cert {
   }
 
   static async getIssuerAttr() {
-    const key = await Key.findOne({
-      attributes: ['certificatePem'],
-    });
-    const issuerCertPem = key.certificatePem;
-    const issuerCert = pki.certificateFromPem(issuerCertPem);
+    try {
+      const key = await Key.findOne({
+        attributes: ['certificatePem'],
+      });
+      const issuerCertPem = key.certificatePem;
+      const issuerCert = pki.certificateFromPem(issuerCertPem);
 
-    return _.sum(issuerCert.issuer.attributes, attr => `/${attr.shortName}=${attr.value}`);
+      return _.sum(issuerCert.issuer.attributes, attr => `/${attr.shortName}=${attr.value}`);
+    } catch (error) {
+      throw error;
+    }
   }
 }
 

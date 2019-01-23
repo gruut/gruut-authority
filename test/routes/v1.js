@@ -16,8 +16,7 @@ const Cert = require('../../utils/cert');
 
 chai.use(chaiHttp);
 
-describe('POST users', function () {
-  this.timeout(50000);
+describe('POST users', () => {
   const csr = '-----BEGIN CERTIFICATE REQUEST-----\n'
     + 'MIGVMHUCAQAwFTETMBEGA1UEAwwKR1JVVVRfQVVUSDBZMBMGByqGSM49AgEGCCqG\n'
     + 'SM49AwEHA0IABBvB/ubJP4S3M8Ka7GC+LzdPuMvVkjZhSdon2lhmj4+NUNMeXOsS\n'
@@ -27,7 +26,8 @@ describe('POST users', function () {
 
   before((done) => {
     // drops table and re-creates it
-    Promise.all([User.sync({ force: true }), Key.sync({ force: true })]).then(() => {
+    Promise.all([User.sync({ force: true })]).then(async () => {
+      await Cert.generateKeyPair();
       done();
     }).catch((e) => {
       done(e);
@@ -35,8 +35,6 @@ describe('POST users', function () {
   });
 
   it('should create user', (done) => {
-    Cert.generateKeyPair();
-
     chai.request(server)
       .post('/v1/users')
       .send({
@@ -44,6 +42,8 @@ describe('POST users', function () {
         csr,
       })
       .end((err, res) => {
+        if (err) done(err);
+
         res.should.have.status(200);
         done();
       });
@@ -57,6 +57,8 @@ describe('POST users', function () {
         csr,
       })
       .end((err, res) => {
+        if (err) done(err);
+
         res.should.have.status(200);
         // eslint-disable-next-line no-unused-expressions
         expect(res.body.nid).to.exist;
@@ -72,6 +74,8 @@ describe('POST users', function () {
         csr,
       })
       .end((err, res) => {
+        if (err) done(err);
+
         res.should.have.status(200);
         const str = res.body.nid;
 
@@ -81,8 +85,6 @@ describe('POST users', function () {
   });
 
   it('expects to accept a role parameter', (done) => {
-    Cert.generateKeyPair();
-
     chai.request(server)
       .post('/v1/users')
       .send({
@@ -91,6 +93,8 @@ describe('POST users', function () {
         role: userRole.ENDPOINT,
       })
       .end(async (err, res) => {
+        if (err) done(err);
+
         res.should.have.status(200);
 
         const user = await User.findOne({
@@ -113,6 +117,8 @@ describe('POST users', function () {
         csr: '',
       })
       .end((err, res) => {
+        if (err) done(err);
+
         res.should.have.status(404);
         done();
       });
@@ -128,6 +134,8 @@ describe('POST users', function () {
         csr,
       })
       .end((err, res) => {
+        if (err) done(err);
+
         res.should.have.status(200);
         const str = res.body.pem;
 
