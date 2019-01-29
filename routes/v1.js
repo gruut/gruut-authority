@@ -14,10 +14,10 @@ router.post('/users', bodyParser.urlencoded({ extended: false }), async (req, re
 
     const subjectCsr = cryptoUtils.asn1.csr.CSRUtil.getInfo(csr);
     const pemPublicKey = cryptoUtils.asn1.ASN1Util.getPEMStringFromHex(subjectCsr.pubkey.hex, 'PUBLIC KEY');
+
     let user = await User.findOne({
       where: {
         phone,
-        publicKey: pemPublicKey,
       },
       attributes: ['nid'],
     });
