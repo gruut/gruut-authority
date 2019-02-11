@@ -3,30 +3,43 @@ process.env.NODE_ENV = 'test';
 
 const chai = require('chai');
 const chaiHttp = require('chai-http');
-const { Certificate } = require('@fidm/x509');
+const {
+  Certificate,
+} = require('@fidm/x509');
+const cryptoUtils = require('jsrsasign');
 const userRole = require('../../enums/user_role');
 
 /* eslint-disable no-unused-vars */
 /* eslint-disable no-undef */
 const should = chai.should();
-const { expect } = chai;
+const {
+  expect,
+} = chai;
 const server = require('../../app.js');
-const { User, Key, sequelize: { Op } } = require('../../models');
+const {
+  User,
+  Key,
+  sequelize: {
+    Op,
+  },
+} = require('../../models');
 const Cert = require('../../utils/cert');
 
 chai.use(chaiHttp);
 
-describe('POST users', () => {
-  const csr = '-----BEGIN CERTIFICATE REQUEST-----\n'
-    + 'MIGVMHUCAQAwFTETMBEGA1UEAwwKR1JVVVRfQVVUSDBZMBMGByqGSM49AgEGCCqG\n'
-    + 'SM49AwEHA0IABBvB/ubJP4S3M8Ka7GC+LzdPuMvVkjZhSdon2lhmj4+NUNMeXOsS\n'
-    + 'anEQkrcraecwZbs2Clq9U1PRwMp62upKdcMwCgYIKoZIzj0DAQcDEAAwDQYJKoZI\n'
-    + 'hvcNAQkOMQA=\n'
-    + '-----END CERTIFICATE REQUEST-----\n';
+const csr = '-----BEGIN CERTIFICATE REQUEST-----\n'
+  + 'MIGVMHUCAQAwFTETMBEGA1UEAwwKR1JVVVRfQVVUSDBZMBMGByqGSM49AgEGCCqG\n'
+  + 'SM49AwEHA0IABBvB/ubJP4S3M8Ka7GC+LzdPuMvVkjZhSdon2lhmj4+NUNMeXOsS\n'
+  + 'anEQkrcraecwZbs2Clq9U1PRwMp62upKdcMwCgYIKoZIzj0DAQcDEAAwDQYJKoZI\n'
+  + 'hvcNAQkOMQA=\n'
+  + '-----END CERTIFICATE REQUEST-----\n';
 
+describe('POST users', () => {
   before((done) => {
     // drops table and re-creates it
-    Promise.all([User.sync({ force: true })]).then(async () => {
+    Promise.all([User.sync({
+      force: true,
+    })]).then(async () => {
       await Cert.generateKeyPair();
       done();
     }).catch((e) => {
@@ -99,7 +112,9 @@ describe('POST users', () => {
 
         const user = await User.findOne({
           where: {
-            role: { [Op.eq]: userRole.ENDPOINT },
+            role: {
+              [Op.eq]: userRole.ENDPOINT,
+            },
           },
         });
 
@@ -148,5 +163,31 @@ describe('POST users', () => {
 
         done();
       });
+  });
+
+  describe('GET users', () => {
+    it('expects to have ocsp response', async () => {
+      Cert.generateKeyPair();
+      const subjectCsr = cryptoUtils.asn1.csr.CSRUtil.getInfo(csr);
+      const subjectCert = await Cert.createCert({
+        csr: subjectCsr,
+      });
+      const keys = await Key.findAll();
+      const key = keys[0];
+
+      const ocspRequest = new cryptoUtils.KJUR.asn1.ocsp.Request({
+        issuerCert: key.certificatePem,
+        subjectCert,
+      });
+
+      chai.request(server)
+        .get('/v1/users/verify')
+        .send({
+          ocspRequest,
+        })
+        .end((err, res) => {
+          res.should.have.status(200);
+        });
+    });
   });
 });

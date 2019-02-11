@@ -73,4 +73,10 @@ router.post('/users', bodyParser.urlencoded({ extended: false }), async (req, re
   }
 });
 
+router.get('/users/verify', bodyParser.urlencoded({
+  extended: false,
+}), (req, res) => {
+  res.sendStatus(200);
+});
+
 module.exports = router;
