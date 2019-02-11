@@ -4,7 +4,7 @@ const cryptoUtils = require('jsrsasign');
 
 const router = express.Router();
 const { User } = require('../models');
-const cert = require('../utils/cert');
+const certUtils = require('../utils/cert');
 const converter = require('../utils/type_converter');
 const userRole = require('../enums/user_role');
 
@@ -31,15 +31,18 @@ router.post('/users', bodyParser.urlencoded({ extended: false }), async (req, re
       }
       user = await User.create({ phone, publicKey: pemPublicKey, role: r });
 
-      const pem = await cert.createCert({ nid: user.nid, csr: subjectCsr, role: r });
-      user.cert = pem;
+      const { cert, serialNum } = await certUtils.createCert({ nid: user.nid, csr: subjectCsr, role: r });
+      const certPem = cert.getPEMString();
+
+      user.cert = certPem;
+      user.serial_num = serialNum;
       await user.save();
 
       return res.status(200).json({
         code: 200,
         message: '유저가 등록되었습니다.',
         nid: converter.nIdToBase64Str(user.nid),
-        pem,
+        certPem,
       });
     }
 

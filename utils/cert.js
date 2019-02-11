@@ -89,7 +89,10 @@ class Cert {
 
       const tbsCert = new cryptoUtils.asn1.x509.TBSCertificate();
 
-      tbsCert.setSerialNumberByParam({ int: this.getSerialNum() });
+      const serialNum = this.getSerialNum();
+      tbsCert.setSerialNumberByParam({
+        int: serialNum,
+      });
       tbsCert.setSignatureAlgByParam({ name: 'SHA256withRSA' });
 
       const attrs = await this.getIssuerAttr();
@@ -111,7 +114,10 @@ class Cert {
       });
       cert.sign();
 
-      return cert.getPEMString();
+      return {
+        cert,
+        serialNum,
+      };
     } catch (e) {
       throw e;
     }
