@@ -152,7 +152,7 @@ describe('POST users', () => {
         if (err) done(err);
 
         res.should.have.status(200);
-        const str = res.body.pem;
+        const str = res.body.certPem;
 
         const issuer = Certificate.fromPEM(str);
 
@@ -169,7 +169,7 @@ describe('POST users', () => {
     it('expects to have ocsp response', async () => {
       Cert.generateKeyPair();
       const subjectCsr = cryptoUtils.asn1.csr.CSRUtil.getInfo(csr);
-      const subjectCert = await Cert.createCert({
+      const { cert } = await Cert.createCert({
         csr: subjectCsr,
       });
       const keys = await Key.findAll();
@@ -177,7 +177,7 @@ describe('POST users', () => {
 
       const ocspRequest = new cryptoUtils.KJUR.asn1.ocsp.Request({
         issuerCert: key.certificatePem,
-        subjectCert,
+        subjectCert: cert.getPEMString(),
       });
 
       chai.request(server)
