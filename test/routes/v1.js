@@ -34,6 +34,14 @@ const csr = '-----BEGIN CERTIFICATE REQUEST-----\n'
   + 'hvcNAQkOMQA=\n'
   + '-----END CERTIFICATE REQUEST-----\n';
 
+const publicKey = '-----BEGIN PUBLIC KEY-----\n'
+    + '\n'
+    + ' MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCqGKukO1De7zhZj6+H0qtjTkVxwTCpvKe4eCZ0\n'
+    + ' FPqri0cb2JZfXJ/DgYSF6vUpwmJG8wVQZKjeGcjDOL5UlsuusFncCzWBQ7RKNUSesmQRMSGkVb1/\n'
+    + ' 3j+skZ6UtW+5u09lHNsj6tQ51s1SPrCBkedbNf0Tp0GbMJDyR4e9T04ZZwIDAQAB\n'
+    + '\n'
+    + '-----END PUBLIC KEY-----';
+
 describe('POST users', () => {
   before((done) => {
     // drops table and re-creates it
@@ -169,12 +177,19 @@ describe('POST users', () => {
     it('expects to have ocsp response', async () => {
       Cert.generateKeyPair();
       const subjectCsr = cryptoUtils.asn1.csr.CSRUtil.getInfo(csr);
-      const { cert } = await Cert.createCert({
+      const { cert, serialNum } = await Cert.createCert({
         csr: subjectCsr,
       });
       const keys = await Key.findAll();
       const key = keys[0];
 
+      await User.create({
+        cert: cert.getPEMString(),
+        role: userRole.SIGNER,
+        phone: '010',
+        publicKey,
+        serialNum,
+      });
       const ocspRequest = new cryptoUtils.KJUR.asn1.ocsp.Request({
         issuerCert: key.certificatePem,
         subjectCert: cert.getPEMString(),

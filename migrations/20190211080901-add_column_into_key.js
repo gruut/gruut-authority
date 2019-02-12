@@ -1,14 +1,13 @@
 module.exports = {
   up: (queryInterface, Sequelize) => queryInterface.addColumn(
     'Users',
-    'serial_num',
+    'serialNum',
     {
-      type: Sequelize.INTEGER,
-      allowNull: false,
+      type: Sequelize.BIGINT,
     },
   ),
   down: queryInterface => queryInterface.removeColumn(
     'Users',
-    'serial_num',
+    'serialNum',
   ),
 };

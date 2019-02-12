@@ -25,6 +25,9 @@ module.exports = (sequelize, DataTypes) => {
     cert: {
       type: DataTypes.TEXT,
     },
+    serialNum: {
+      type: DataTypes.BIGINT,
+    },
   },
   {
     timestamps: true,
