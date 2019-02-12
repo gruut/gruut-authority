@@ -6,6 +6,7 @@ const userRole = require('../../enums/user_role');
 const Cert = require('../../utils/cert');
 
 /* eslint-disable no-undef */
+// eslint-disable-next-line func-names
 describe('User', function () {
   this.timeout(50000);
   Cert.generateKeyPair();
@@ -38,6 +39,7 @@ describe('User', function () {
     + 'YYDDM5W7nTd26hKrPdjt9BTTrDKOL2UIatCzLvNKgUI8c5cpFDq3+PCWTBmFghkY\n'
     + 'pMKUtM2HOFKS/8uOCJwrS5qFrhNWvT0VwvYbK932otqkK8edcA==\n'
     + '-----END CERTIFICATE-----\n';
+  const serialNum = 0;
 
   before((done) => {
     User.sync({ force: true }) // drops table and re-creates it
@@ -56,6 +58,7 @@ describe('User', function () {
         role: userRole.SIGNER,
         publicKey,
         cert,
+        serialNum,
       }).then((user) => {
         expect(user.phone).to.equal('010-1234-5678');
         done();
@@ -70,6 +73,7 @@ describe('User', function () {
         role: userRole.SIGNER,
         publicKey,
         cert,
+        serialNum,
       }).catch((err) => {
         expect(err.name).to.equal('ValidationError');
         done();
@@ -81,6 +85,7 @@ describe('User', function () {
         phone: '010-8770-6498',
         role: userRole.SIGNER,
         publicKey: '',
+        serialNum,
       }).catch((err) => {
         expect(err.name).to.equal('ValidationError');
         done();

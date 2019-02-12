@@ -35,7 +35,7 @@ router.post('/users', bodyParser.urlencoded({ extended: false }), async (req, re
       const certPem = cert.getPEMString();
 
       user.cert = certPem;
-      user.serial_num = serialNum;
+      user.serialNum = serialNum;
       await user.save();
 
       return res.status(200).json({
@@ -78,8 +78,19 @@ router.post('/users', bodyParser.urlencoded({ extended: false }), async (req, re
 
 router.get('/users/verify', bodyParser.urlencoded({
   extended: false,
-}), (req, res) => {
-  res.sendStatus(200);
+}), async (req, res) => {
+  const serialNum = parseInt(req.body.ocspRequest.dReqCert.dSerialNumber.hV, 16);
+  const user = await User.find({
+    where: {
+      serialNum,
+    },
+  });
+
+  if (user !== null) {
+    res.sendStatus(200);
+  } else {
+    res.sendStatus(404);
+  }
 });
 
 module.exports = router;
