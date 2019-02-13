@@ -6,6 +6,7 @@ const router = express.Router();
 const { User } = require('../models');
 const certUtils = require('../utils/cert');
 const converter = require('../utils/type_converter');
+const ocspUtils = require('../utils/ocsp');
 const userRole = require('../enums/user_role');
 
 router.post('/users', bodyParser.urlencoded({ extended: false }), async (req, res) => {
@@ -31,7 +32,9 @@ router.post('/users', bodyParser.urlencoded({ extended: false }), async (req, re
       }
       user = await User.create({ phone, publicKey: pemPublicKey, role: r });
 
-      const { cert, serialNum } = await certUtils.createCert({ nid: user.nid, csr: subjectCsr, role: r });
+      const { cert, serialNum } = await certUtils.createCert(
+        { nid: user.nid, csr: subjectCsr, role: r },
+      );
       const certPem = cert.getPEMString();
 
       user.cert = certPem;
@@ -79,15 +82,11 @@ router.post('/users', bodyParser.urlencoded({ extended: false }), async (req, re
 router.get('/users/verify', bodyParser.urlencoded({
   extended: false,
 }), async (req, res) => {
-  const serialNum = parseInt(req.body.ocspRequest.dReqCert.dSerialNumber.hV, 16);
-  const user = await User.find({
-    where: {
-      serialNum,
-    },
-  });
-
-  if (user !== null) {
-    res.sendStatus(200);
+  const ocspResponse = await ocspUtils.getOCSPResponse(req.body.ocspRequest);
+  if (ocspResponse !== null) {
+    res.status(200).json({
+      ocspResponse,
+    });
   } else {
     res.sendStatus(404);
   }
