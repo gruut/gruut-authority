@@ -201,6 +201,14 @@ describe('POST users', () => {
           ocspRequest,
         })
         .end((err, res) => {
+          // 0: good
+          res.body.ocspResponse
+            .tbsResponseData
+            .responses[0]
+            .certStatus
+            .idBlock
+            .tagNumber.should.have.equal(0);
+
           res.should.have.status(200);
         });
     });
