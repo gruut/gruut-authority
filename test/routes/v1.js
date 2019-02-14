@@ -8,6 +8,7 @@ const {
 } = require('@fidm/x509');
 const cryptoUtils = require('jsrsasign');
 const userRole = require('../../enums/user_role');
+const CertStatus = require('../../enums/ocsp/status_name');
 
 /* eslint-disable no-unused-vars */
 /* eslint-disable no-undef */
@@ -174,25 +175,49 @@ describe('POST users', () => {
   });
 
   describe('GET users', () => {
-    it('expects to have ocsp response', async () => {
-      Cert.generateKeyPair();
-      const subjectCsr = cryptoUtils.asn1.csr.CSRUtil.getInfo(csr);
-      const { cert, serialNum } = await Cert.createCert({
-        csr: subjectCsr,
-      });
-      const keys = await Key.findAll();
-      const key = keys[0];
+    let ocspRequest = null;
+    let subjectCert = null;
+    let subjectSerialNum = null;
 
+    beforeEach((done) => {
+      // drops table and re-creates it
+      Promise.all([User.sync({
+        force: true,
+      })]).then(async () => {
+        await Cert.generateKeyPair();
+
+        const subjectCsr = cryptoUtils.asn1.csr.CSRUtil.getInfo(csr);
+        const {
+          cert,
+          serialNum,
+        } = await Cert.createCert({
+          csr: subjectCsr,
+        });
+
+        subjectCert = cert;
+        subjectSerialNum = serialNum;
+
+        const keys = await Key.findAll();
+        const key = keys[0];
+
+        ocspRequest = new cryptoUtils.KJUR.asn1.ocsp.Request({
+          issuerCert: key.certificatePem,
+          subjectCert: subjectCert.getPEMString(),
+        });
+
+        done();
+      }).catch((e) => {
+        done(e);
+      });
+    });
+
+    it('expects to have ocsp response', async () => {
       await User.create({
-        cert: cert.getPEMString(),
+        cert: subjectCert.getPEMString(),
         role: userRole.SIGNER,
         phone: '010',
         publicKey,
-        serialNum,
-      });
-      const ocspRequest = new cryptoUtils.KJUR.asn1.ocsp.Request({
-        issuerCert: key.certificatePem,
-        subjectCert: cert.getPEMString(),
+        serialNum: subjectSerialNum,
       });
 
       chai.request(server)
@@ -201,13 +226,30 @@ describe('POST users', () => {
           ocspRequest,
         })
         .end((err, res) => {
-          // 0: good
           res.body.ocspResponse
             .tbsResponseData
             .responses[0]
             .certStatus
             .idBlock
-            .tagNumber.should.have.equal(0);
+            .tagNumber.should.have.equal(CertStatus.GOOD);
+
+          res.should.have.status(200);
+        });
+    });
+
+    it("expects to return 'unknown' state", () => {
+      chai.request(server)
+        .get('/v1/users/verify')
+        .send({
+          ocspRequest,
+        })
+        .end((err, res) => {
+          res.body.ocspResponse
+            .tbsResponseData
+            .responses[0]
+            .certStatus
+            .idBlock
+            .tagNumber.should.have.equal(CertStatus.UNKNOWN);
 
           res.should.have.status(200);
         });
