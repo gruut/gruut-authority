@@ -203,35 +203,24 @@ describe('POST users', () => {
     let subjectCert = null;
     let subjectSerialNum = null;
 
-    beforeEach((done) => {
-      // drops table and re-creates it
-      Promise.all([User.sync({
-        force: true,
-      })]).then(async () => {
-        await Cert.generateKeyPair();
+    beforeEach(async () => {
+      const subjectCsr = cryptoUtils.asn1.csr.CSRUtil.getInfo(csr);
+      const {
+        cert,
+        serialNum,
+      } = await Cert.createCert({
+        csr: subjectCsr,
+      });
 
-        const subjectCsr = cryptoUtils.asn1.csr.CSRUtil.getInfo(csr);
-        const {
-          cert,
-          serialNum,
-        } = await Cert.createCert({
-          csr: subjectCsr,
-        });
+      subjectCert = cert;
+      subjectSerialNum = serialNum;
 
-        subjectCert = cert;
-        subjectSerialNum = serialNum;
+      const keys = await Key.findAll();
+      const key = keys[0];
 
-        const keys = await Key.findAll();
-        const key = keys[0];
-
-        ocspRequest = new cryptoUtils.KJUR.asn1.ocsp.Request({
-          issuerCert: key.certificatePem,
-          subjectCert: subjectCert.getPEMString(),
-        });
-
-        done();
-      }).catch((e) => {
-        done(e);
+      ocspRequest = new cryptoUtils.KJUR.asn1.ocsp.Request({
+        issuerCert: key.certificatePem,
+        subjectCert: subjectCert.getPEMString(),
       });
     });
 
