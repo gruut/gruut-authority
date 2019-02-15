@@ -2,6 +2,7 @@
 const Pkijs = require('pkijs');
 const Asn1js = require('asn1js');
 const WebCrypto = require('node-webcrypto-ossl');
+const PvUtils = require('pvutils');
 
 const StatusName = require('../enums/ocsp/status_name');
 const StatusValue = require('../enums/ocsp/status_value');
@@ -23,9 +24,9 @@ async function getOCSPResponse(ocspRequest) {
   });
 
   const ocspRespSimpl = new Pkijs.OCSPResponse();
+  ocspRespSimpl.responseStatus.valueBlock.valueDec = getCertStatusValueFrom(user);
   ocspRespSimpl.responseBytes = new Pkijs.ResponseBytes();
   ocspRespSimpl.responseBytes.responseType = '1.3.6.1.5.5.7.48.1.1'; // Basic OCSP Response
-  ocspRespSimpl.responseStatus.valueBlock.valueDec = getCertStatusValueFrom(user);
 
   const ocspBasicResp = new Pkijs.BasicOCSPResponse();
   ocspBasicResp.tbsResponseData.producedAt = new Date();
@@ -34,16 +35,22 @@ async function getOCSPResponse(ocspRequest) {
     const pkijsCert = decodeCert(user.cert);
 
     ocspBasicResp.tbsResponseData.responderID = pkijsCert.issuer;
+    ocspBasicResp.tbsResponseData.producedAt = new Date();
     ocspBasicResp.certs = [pkijsCert];
-
-    // TODO: Signature 구현이 어려워서 Merger에 revocation 체크하는 기능이 추가될때 같이 구현
-    // const resp = await ocspBasicResp.sign(global.keyPairs.privateKey, 'SHA-256');
   }
+
+  const crypto = Pkijs.getCrypto();
+  const algorithm = Pkijs.getAlgorithmParameters('RSASSA-PKCS1-V1_5', 'generatekey');
+  if ('hash' in algorithm.algorithm) {
+    algorithm.algorithm.hash.name = 'SHA-1';
+  }
+
+  const keyPairs = await crypto.generateKey(algorithm.algorithm, true, algorithm.usages);
+  await ocspBasicResp.sign(keyPairs.privateKey, 'SHA-1');
 
   const response = new Pkijs.SingleResponse();
   response.certID.serialNumber.valueBlock.valueDec = serialNum;
   response.thisUpdate = new Date();
-
   response.certStatus = new Asn1js.Primitive({
     idBlock: {
       tagClass: 3, // CONTEXT-SPECIFIC
@@ -53,7 +60,13 @@ async function getOCSPResponse(ocspRequest) {
   });
   ocspBasicResp.tbsResponseData.responses.push(response);
 
-  return ocspBasicResp;
+  const encodedOCSPBasicResp = ocspBasicResp.toSchema().toBER(false);
+  ocspRespSimpl.responseBytes.response = new Asn1js.OctetString({
+    valueHex: encodedOCSPBasicResp,
+  });
+
+  const pem = formatPEM(PvUtils.toBase64(PvUtils.arrayBufferToString(ocspRespSimpl.toSchema().toBER(false))));
+  return pem;
 }
 
 function setEngine() {
@@ -101,6 +114,24 @@ function getCertStatusNameFrom(user) {
   }
 
   return StatusName.UNKNOWN;
+}
+
+function formatPEM(pemString) {
+  const stringLength = pemString.length;
+  let resultString = '-----BEGIN OCSP RESPONSE-----\r\n';
+
+  // eslint-disable-next-line no-plusplus
+  for (let i = 0, count = 0; i < stringLength; i++, count++) {
+    if (count > 63) {
+      resultString = `${resultString}\r\n`;
+      count = 0;
+    }
+
+    resultString += pemString[i];
+  }
+
+  resultString += '\r\n-----END OCSP RESPONSE-----\r\n\r\n';
+  return resultString;
 }
 
 module.exports = {
