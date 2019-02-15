@@ -1,19 +1,35 @@
+/* eslint-disable no-plusplus */
 /* eslint-disable no-use-before-define */
 const Pkijs = require('pkijs');
 const Asn1js = require('asn1js');
 const WebCrypto = require('node-webcrypto-ossl');
 const PvUtils = require('pvutils');
+const atob = require('atob');
 
 const StatusName = require('../enums/ocsp/status_name');
 const StatusValue = require('../enums/ocsp/status_value');
 
 const {
   User,
+  Key,
 } = require('../models');
+
+let crypto = null;
+const signAlgorithm = {
+  name: 'RSASSA-PKCS1-v1_5',
+  hash: {
+    name: 'SHA-256',
+  },
+  modulusLength: 3072,
+  extractable: false,
+  publicExponent: new Uint8Array([1, 0, 1]),
+};
 
 async function getOCSPResponse(ocspRequest) {
   // TODO: user의 certificate의 날짜가 유효한지 확인하고, 만료되었다면 serialNum 필드를 NULL로 설정
   setEngine();
+
+  crypto = Pkijs.getCrypto();
 
   const serialNum = parseInt(ocspRequest.dReqCert.dSerialNumber.hV, 16);
 
@@ -39,14 +55,11 @@ async function getOCSPResponse(ocspRequest) {
     ocspBasicResp.certs = [pkijsCert];
   }
 
-  const crypto = Pkijs.getCrypto();
-  const algorithm = Pkijs.getAlgorithmParameters('RSASSA-PKCS1-V1_5', 'generatekey');
-  if ('hash' in algorithm.algorithm) {
-    algorithm.algorithm.hash.name = 'SHA-1';
-  }
+  const keys = await Key.findAll();
+  const skPem = keys[0].privateKeyPem;
 
-  const keyPairs = await crypto.generateKey(algorithm.algorithm, true, algorithm.usages);
-  await ocspBasicResp.sign(keyPairs.privateKey, 'SHA-1');
+  const sk = await importPrivateKey(skPem);
+  await ocspBasicResp.sign(sk, sk.algorithm.hash.name);
 
   const response = new Pkijs.SingleResponse();
   response.certID.serialNumber.valueBlock.valueDec = serialNum;
@@ -65,7 +78,12 @@ async function getOCSPResponse(ocspRequest) {
     valueHex: encodedOCSPBasicResp,
   });
 
-  const pem = formatPEM(PvUtils.toBase64(PvUtils.arrayBufferToString(ocspRespSimpl.toSchema().toBER(false))));
+  const pem = formatPEM(
+    PvUtils
+      .toBase64(
+        PvUtils.arrayBufferToString(ocspRespSimpl.toSchema().toBER(false)),
+      ),
+  );
   return pem;
 }
 
@@ -132,6 +150,39 @@ function formatPEM(pemString) {
 
   resultString += '\r\n-----END OCSP RESPONSE-----\r\n\r\n';
   return resultString;
+}
+
+function importPrivateKey(pemKey) {
+  return new Promise(((resolve) => {
+    const importer = crypto.subtle.importKey('pkcs8', convertPemToBinary(pemKey), signAlgorithm, true, ['sign']);
+    importer.then((key) => {
+      resolve(key);
+    });
+  }));
+}
+
+function convertPemToBinary(pem) {
+  const lines = pem.split('\n');
+  let encoded = '';
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].trim().length > 0
+      && lines[i].indexOf('-BEGIN PRIVATE KEY-') < 0
+      && lines[i].indexOf('-BEGIN PUBLIC KEY-') < 0
+      && lines[i].indexOf('-END PRIVATE KEY-') < 0
+      && lines[i].indexOf('-END PUBLIC KEY-') < 0) {
+      encoded += lines[i].trim();
+    }
+  }
+  return base64StringToArrayBuffer(encoded);
+}
+
+function base64StringToArrayBuffer(b64str) {
+  const byteStr = atob(b64str);
+  const bytes = new Uint8Array(byteStr.length);
+  for (let i = 0; i < byteStr.length; i++) {
+    bytes[i] = byteStr.charCodeAt(i);
+  }
+  return bytes.buffer;
 }
 
 module.exports = {
