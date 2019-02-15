@@ -3,12 +3,15 @@ process.env.NODE_ENV = 'test';
 
 const chai = require('chai');
 const chaiHttp = require('chai-http');
+const Pkijs = require('pkijs');
+const Asn1js = require('asn1js');
+
 const {
   Certificate,
 } = require('@fidm/x509');
 const cryptoUtils = require('jsrsasign');
 const userRole = require('../../enums/user_role');
-const CertStatus = require('../../enums/ocsp/status_name');
+const CertValue = require('../../enums/ocsp/status_value');
 
 /* eslint-disable no-unused-vars */
 /* eslint-disable no-undef */
@@ -42,6 +45,27 @@ const publicKey = '-----BEGIN PUBLIC KEY-----\n'
     + ' 3j+skZ6UtW+5u09lHNsj6tQ51s1SPrCBkedbNf0Tp0GbMJDyR4e9T04ZZwIDAQAB\n'
     + '\n'
     + '-----END PUBLIC KEY-----';
+
+function decodeOCSP(pem) {
+  if (typeof pem !== 'string') {
+    throw new Error('Expected PEM as string');
+  }
+  // Load certificate in PEM encoding (base64 encoded DER)
+  const b64 = pem.replace(/(-----(BEGIN|END) OCSP RESPONSE-----|[\n\r])/g, '');
+
+  // Now that we have decoded the cert it's now in DER-encoding
+  const der = Buffer.from(b64, 'base64');
+
+  // And massage the cert into a BER encoded one
+  const ber = new Uint8Array(der).buffer;
+
+  // And now Asn1js can decode things \o/
+  const asn1 = Asn1js.fromBER(ber);
+
+  return new Pkijs.OCSPResponse({
+    schema: asn1.result,
+  });
+}
 
 describe('POST users', () => {
   before((done) => {
@@ -226,14 +250,15 @@ describe('POST users', () => {
           ocspRequest,
         })
         .end((err, res) => {
-          res.body.ocspResponse
-            .tbsResponseData
-            .responses[0]
-            .certStatus
-            .idBlock
-            .tagNumber.should.have.equal(CertStatus.GOOD);
-
           res.should.have.status(200);
+
+          const ocspResponse = decodeOCSP(res.body.ocspResponse);
+          const resValue = ocspResponse
+            .responseStatus
+            .valueBlock
+            .valueDec;
+
+          resValue.should.equal(CertValue.SUCCESSFUL);
         });
     });
 
@@ -244,14 +269,15 @@ describe('POST users', () => {
           ocspRequest,
         })
         .end((err, res) => {
-          res.body.ocspResponse
-            .tbsResponseData
-            .responses[0]
-            .certStatus
-            .idBlock
-            .tagNumber.should.have.equal(CertStatus.UNKNOWN);
-
           res.should.have.status(200);
+
+          const ocspResponse = decodeOCSP(res.body.ocspResponse);
+          const resValue = ocspResponse
+            .responseStatus
+            .valueBlock
+            .valueDec;
+
+          resValue.should.equal(CertValue.UNKNOWN);
         });
     });
   });
