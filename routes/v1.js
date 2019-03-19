@@ -1,6 +1,7 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const cryptoUtils = require('jsrsasign');
+const cors = require('cors');
 
 const router = express.Router();
 const { User } = require('../models');
@@ -9,7 +10,9 @@ const converter = require('../utils/type_converter');
 const ocspUtils = require('../utils/ocsp');
 const userRole = require('../enums/user_role');
 
-router.post('/users', bodyParser.urlencoded({ extended: false }), async (req, res) => {
+router.post('/users', cors(), bodyParser.urlencoded({
+  extended: false,
+}), async (req, res) => {
   try {
     const { phone, csr, role } = req.body;
 
