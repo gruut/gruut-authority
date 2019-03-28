@@ -106,7 +106,7 @@ describe('POST users', () => {
         if (err) done(err);
 
         res.should.have.status(200);
-        // eslint-disable-next-line no-unused-expressions
+
         expect(res.body.nid).to.exist;
         done();
       });

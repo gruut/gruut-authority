@@ -23,7 +23,6 @@ router.post('/users', cors(), bodyParser.urlencoded({
       where: {
         phone,
       },
-      attributes: ['nid'],
     });
 
     if (!user) {
@@ -34,28 +33,22 @@ router.post('/users', cors(), bodyParser.urlencoded({
         r = userRole.SIGNER;
       }
       user = await User.create({ phone, publicKey: pemPublicKey, role: r });
-
-      const { cert, serialNum } = await certUtils.createCert(
-        { nid: user.nid, csr: subjectCsr, role: r },
-      );
-      const certPem = cert.getPEMString();
-
-      user.cert = certPem;
-      user.serialNum = serialNum;
-      await user.save();
-
-      return res.status(200).json({
-        code: 200,
-        message: '유저가 등록되었습니다.',
-        nid: converter.nIdToBase64Str(user.nid),
-        certPem,
-      });
     }
+
+    const { cert, serialNum } = await certUtils.createCert(
+      { nid: user.nid, csr: subjectCsr, role: user.role },
+    );
+    const certPem = cert.getPEMString();
+
+    user.cert = certPem;
+    user.serialNum = serialNum;
+    await user.save();
 
     return res.status(200).json({
       code: 200,
-      message: '유저가 이미 존재합니다.',
+      message: '유저가 등록되었습니다.',
       nid: converter.nIdToBase64Str(user.nid),
+      certPem,
     });
   } catch (err) {
     // TODO: logger로 대체해야 함
