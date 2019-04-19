@@ -8,7 +8,7 @@ const shell = require('shelljs');
 const moment = require('moment');
 const Random = require('crypto-random');
 const _ = require('partial-js');
-const { Key, User, sequelize: { Op } } = require('../models');
+const { Key, User, Sequelize: { Op } } = require('../models');
 const Role = require('../enums/user_role');
 
 class Cert {

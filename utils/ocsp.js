@@ -18,7 +18,7 @@ async function getOCSPResponse(ocspRequest) {
   // 필드를 NULL로 설정
   const pkijsUtils = new PkiJsUtils();
   const serialNum = parseInt(ocspRequest.dReqCert.dSerialNumber.hV, 16);
-  const user = await User.find({
+  const user = await User.findOne({
     where: {
       serialNum,
     },

@@ -23,7 +23,7 @@ const server = require('../../app.js');
 const {
   User,
   Key,
-  sequelize: {
+  Sequelize: {
     Op,
   },
 } = require('../../models');
